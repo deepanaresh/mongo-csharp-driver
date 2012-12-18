@@ -395,7 +395,7 @@ namespace MongoDB.Driver
 
             try
             {
-                connection.CheckAuthentication(databaseName, credentials); // will authenticate if necessary
+                connection.Authenticate(databaseName, credentials); // will authenticate if necessary
             }
             catch (MongoAuthenticationException)
             {
