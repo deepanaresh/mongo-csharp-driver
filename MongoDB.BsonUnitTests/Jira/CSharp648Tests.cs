@@ -16,6 +16,8 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using NUnit.Framework;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Conventions;
 
 namespace MongoDB.BsonUnitTests.Jira.CSharp648
 {
@@ -25,26 +27,48 @@ namespace MongoDB.BsonUnitTests.Jira.CSharp648
         public class C
         {
             public int Id;
-            public User User;
+            public U1 U1;
+            public U2 U2;
+            public U3 U3;
         }
 
-        [BsonNoId]
-        public class User
+        [BsonNoId] // suppressing the _id by using the [BsonNoId] attribute
+        public class U1
         {
             public int Id;
-            public string Name;
+        }
+
+        public class U2
+        {
+            public int Id;
+        }
+
+        public class U3
+        {
+            public int Id;
+        }
+
+        static CSharp648Tests()
+        {
+            // suppressing the _id by registering the class map manually
+            BsonClassMap.RegisterClassMap<U2>(cm =>
+            {
+                cm.AutoMap();
+                cm.SetIdMember(null);
+            });
+
+            // suppressing the _id by using the NoIdMemberConvention
+            var pack = new ConventionPack();
+            pack.Add(new NoIdMemberConvention());
+            ConventionRegistry.Register("U3noid", pack, t => t == typeof(U3));
         }
 
         [Test]
         public void TestNoId()
         {
-            var c = new C
-            {
-                Id = 1,
-                User = new User { Id = 2, Name = "John" }
-            };
+            var c = new C { Id = 1, U1 = new U1 { Id = 1 }, U2 = new U2 { Id = 2 }, U3 = new U3 { Id = 3 } };
             var json = c.ToJson();
-            var expected = "{ '_id' : 1, 'User' : { 'Id' : 2, 'Name' : 'John' } }".Replace("'", "\"");
+            var expected = "{ '_id' : 1, 'U1' : { 'Id' : 1 }, 'U2' : { 'Id' : 2 }, 'U3' : { 'Id' : 3 } }".Replace("'", "\"");
             Assert.AreEqual(expected, json);
         }
     }

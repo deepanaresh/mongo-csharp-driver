@@ -14,23 +14,38 @@
 */
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 
-namespace MongoDB.Bson.Serialization.Attributes
+namespace MongoDB.Bson.Serialization.Conventions
 {
     /// <summary>
-    /// Specifies that the class's IdMember should be null.
+    /// A convention that sets a class's IdMember to null.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-    public class BsonNoIdAttribute : Attribute, IBsonPostProcessingAttribute
+#pragma warning disable 618 // about obsolete IIdMemberConvention
+    public class NoIdMemberConvention : ConventionBase, IPostProcessingConvention, IIdMemberConvention
+#pragma warning restore 618
     {
         // public methods
         /// <summary>
-        /// Applies the post processing attribute to the class map.
+        /// Applies a post processing modification to the class map.
         /// </summary>
         /// <param name="classMap">The class map.</param>
         public void PostProcess(BsonClassMap classMap)
         {
             classMap.SetIdMember(null);
+        }
+
+        /// <summary>
+        /// Finds the Id member of a class.
+        /// </summary>
+        /// <param name="type">The class.</param>
+        /// <returns>The name of the Id member.</returns>
+        [Obsolete("Use Apply instead.")]
+        public string FindIdMember(Type type)
+        {
+            return null;
         }
     }
 }

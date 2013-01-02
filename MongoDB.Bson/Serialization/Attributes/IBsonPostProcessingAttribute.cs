@@ -13,24 +13,17 @@
 * limitations under the License.
 */
 
-using System;
-
-namespace MongoDB.Bson.Serialization.Attributes
+namespace MongoDB.Bson.Serialization
 {
     /// <summary>
-    /// Specifies that the class's IdMember should be null.
+    /// Represents an attribute used to post process a class map.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-    public class BsonNoIdAttribute : Attribute, IBsonPostProcessingAttribute
+    public interface IBsonPostProcessingAttribute
     {
-        // public methods
         /// <summary>
         /// Applies the post processing attribute to the class map.
         /// </summary>
         /// <param name="classMap">The class map.</param>
-        public void PostProcess(BsonClassMap classMap)
-        {
-            classMap.SetIdMember(null);
-        }
+        void PostProcess(BsonClassMap classMap);
     }
 }

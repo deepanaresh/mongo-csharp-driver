@@ -106,6 +106,7 @@
     <Compile Include="Serialization\Attributes\BsonTimeSpanOptionsAttribute.cs" />
     <Compile Include="Serialization\Attributes\IBsonMemberMapAttribute.cs" />
     <Compile Include="Serialization\Attributes\IBsonClassMapAttribute.cs" />
+    <Compile Include="Serialization\Attributes\IBsonPostProcessingAttribute.cs" />
     <Compile Include="Serialization\BsonClassMapSerializationProvider.cs" />
     <Compile Include="Serialization\BsonDocumentBackedClass.cs" />
     <Compile Include="Serialization\Conventions\AttributeConventionPack.cs" />
@@ -133,6 +134,7 @@
     <Compile Include="Serialization\Conventions\MemberSerializationOptionsConvention.cs" />
     <Compile Include="Serialization\Conventions\NamedExtraElementsMemberConvention.cs" />
     <Compile Include="Serialization\Conventions\NamedIdMemberConvention.cs" />
+    <Compile Include="Serialization\Conventions\NoIdMemberConvention.cs" />
     <Compile Include="Serialization\Conventions\Obsolete\ConventionProfile.cs" />
     <Compile Include="Serialization\Conventions\Obsolete\DefaultValueConventions.cs" />
     <Compile Include="Serialization\Conventions\Obsolete\ElementNameConventions.cs" />
