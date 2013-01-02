@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace MongoDB.Bson.Serialization.Conventions
 {
@@ -103,6 +104,12 @@ namespace MongoDB.Bson.Serialization.Conventions
         /// <param name="classMap">The class map.</param>
         public void Apply(BsonClassMap classMap)
         {
+            var noIdAttributes = classMap.ClassType.GetCustomAttributes(typeof(BsonNoIdAttribute), true); // inherit=true
+            if (noIdAttributes.Length > 0)
+            {
+                return;
+            }
+
             foreach (var name in _names)
             {
                 var member = classMap.ClassType.GetMember(name, _memberTypes, _bindingFlags).SingleOrDefault();
@@ -123,7 +130,13 @@ namespace MongoDB.Bson.Serialization.Conventions
         [Obsolete("Use Apply instead.")]
         public string FindIdMember(Type type)
         {
-            foreach (string name in _names)
+            var noIdAttributes = type.GetCustomAttributes(typeof(BsonNoIdAttribute), true); // inherit=true
+            if (noIdAttributes.Length > 0)
+            {
+                return null;
+            }
+
+            foreach (var name in _names)
             {
                 var memberInfo = type.GetMember(name).SingleOrDefault(x => x.MemberType == MemberTypes.Field || x.MemberType == MemberTypes.Property);
                 if (memberInfo != null)
@@ -131,6 +144,7 @@ namespace MongoDB.Bson.Serialization.Conventions
                     return name;
                 }
             }
+
             return null;
         }
     }

@@ -99,6 +99,7 @@
     <Compile Include="Serialization\Attributes\BsonExtraElementsAttribute.cs" />
     <Compile Include="Serialization\Attributes\BsonIgnoreIfDefaultAttribute.cs" />
     <Compile Include="Serialization\Attributes\BsonMemberMapAttributeUsageAttribute.cs" />
+    <Compile Include="Serialization\Attributes\BsonNoIdAttribute.cs" />
     <Compile Include="Serialization\Attributes\BsonRepresentationAttribute.cs" />
     <Compile Include="Serialization\Attributes\BsonSerializationOptionsAttribute.cs" />
     <Compile Include="Serialization\Attributes\BsonSerializerAttribute.cs" />
