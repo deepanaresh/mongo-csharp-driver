@@ -42,6 +42,7 @@ namespace MongoDB.Bson.Serialization
         private BsonClassMap _baseClassMap; // null for class object and interfaces
         private Type _classType;
         private volatile IDiscriminatorConvention _cachedDiscriminatorConvention;
+        private readonly List<BsonConstructorMap> _constructorMaps;
         private Func<object> _creator;
         private IConventionPack _conventionPack;
         private string _discriminator;
@@ -49,6 +50,7 @@ namespace MongoDB.Bson.Serialization
         private bool _hasRootClass;
         private bool _isRootClass;
         private bool _isAnonymous;
+        private bool _isImmutable;
         private BsonMemberMap _idMemberMap;
         private readonly List<BsonMemberMap> _allMemberMaps; // includes inherited member maps
         private readonly ReadOnlyCollection<BsonMemberMap> _allMemberMapsReadonly;
@@ -68,6 +70,7 @@ namespace MongoDB.Bson.Serialization
         protected BsonClassMap(Type classType)
         {
             _classType = classType;
+            _constructorMaps = new List<BsonConstructorMap>();
             _conventionPack = ConventionRegistry.Lookup(classType);
             _isAnonymous = IsAnonymousType(classType);
             _allMemberMaps = new List<BsonMemberMap>();
@@ -101,6 +104,14 @@ namespace MongoDB.Bson.Serialization
         public Type ClassType
         {
             get { return _classType; }
+        }
+
+        /// <summary>
+        /// Gets the constructor maps.
+        /// </summary>
+        public IEnumerable<BsonConstructorMap> ConstructorMaps
+        {
+            get { return _constructorMaps; }
         }
 
         /// <summary>
@@ -207,6 +218,14 @@ namespace MongoDB.Bson.Serialization
         public bool IsFrozen
         {
             get { return _frozen; }
+        }
+
+        /// <summary>
+        /// Gets whether the class is immutable.
+        /// </summary>
+        public bool IsImmutable
+        {
+            get { return _isImmutable; }
         }
 
         /// <summary>
@@ -622,6 +641,39 @@ namespace MongoDB.Bson.Serialization
         }
 
         /// <summary>
+        /// Creates a constructor map.
+        /// </summary>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns>The constructor map.</returns>
+        public BsonConstructorMap MapConstructor(IEnumerable<BsonConstructorParameter> parameters)
+        {
+            if (parameters == null)
+            {
+                throw new ArgumentNullException("parameters");
+            }
+
+            if (_frozen) { ThrowFrozenException(); }
+
+            var bindingAttr = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            var types = parameters.Select(p => p.Type).ToArray();
+            var constructorInfo = _classType.GetConstructor(bindingAttr, null, types, null);
+            if (constructorInfo == null)
+            {
+                throw new ArgumentException("No matching constructor found.");
+            }
+
+            if (_constructorMaps.Any(m => m.ConstructorInfo == constructorInfo))
+            {
+                throw new InvalidOperationException("The matching constructor has already been mapped.");
+            }
+
+            var constructorMap = new BsonConstructorMap(constructorInfo, parameters);
+            _constructorMaps.Add(constructorMap);
+
+            return constructorMap;
+        }
+
+        /// <summary>
         /// Creates a member map for the extra elements field and adds it to the class map.
         /// </summary>
         /// <param name="fieldName">The name of the extra elements field.</param>
@@ -923,6 +975,16 @@ namespace MongoDB.Bson.Serialization
         {
             if (_frozen) { ThrowFrozenException(); }
             _ignoreExtraElementsIsInherited = ignoreExtraElementsIsInherited;
+        }
+
+        /// <summary>
+        /// Sets whether this class is an immutable class.
+        /// </summary>
+        /// <param name="isImmutable">Whether this class is an immutable class.</param>
+        public void SetIsImmutable(bool isImmutable)
+        {
+            if (_frozen) { ThrowFrozenException(); }
+            _isImmutable = isImmutable;
         }
 
         /// <summary>

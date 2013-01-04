@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization.Options;
@@ -115,7 +116,6 @@ namespace MongoDB.Bson.Serialization
                 {
                     throw new InvalidOperationException("An anonymous class cannot be deserialized.");
                 }
-                var obj = _classMap.CreateInstance();
 
                 if (bsonType != BsonType.Document)
                 {
@@ -125,10 +125,24 @@ namespace MongoDB.Bson.Serialization
                     throw new FileFormatException(message);
                 }
 
-                var supportsInitialization = obj as ISupportInitialize;
-                if (supportsInitialization != null)
+                Dictionary<string, object> values = null;
+                object obj = null;
+                ISupportInitialize supportsInitialization = null;
+                if (_classMap.IsImmutable)
                 {
-                    supportsInitialization.BeginInit();
+                    // for immutable classes we first gather the values in a dictionary and then call a matching constructor
+                    values = new Dictionary<string, object>();
+                }
+                else
+                {
+                    // for mutable classes we deserialize the values directly into the result object
+                    obj = _classMap.CreateInstance();
+
+                    supportsInitialization = obj as ISupportInitialize;
+                    if (supportsInitialization != null)
+                    {
+                        supportsInitialization.BeginInit();
+                    }
                 }
 
                 var discriminatorConvention = _classMap.GetDiscriminatorConvention();
@@ -148,13 +162,22 @@ namespace MongoDB.Bson.Serialization
                         var memberMap = allMemberMaps[memberMapIndex];
                         if (memberMapIndex != extraElementsMemberMapIndex)
                         {
-                            if (memberMap.IsReadOnly)
+                            if (obj != null)
                             {
-                                bsonReader.SkipValue();
+                                if (memberMap.IsReadOnly)
+                                {
+                                    bsonReader.SkipValue();
+                                }
+                                else
+                                {
+                                    var value = DeserializeMemberValue(bsonReader, memberMap);
+                                    memberMap.Setter(obj, value);
+                                }
                             }
                             else
                             {
-                                DeserializeMember(bsonReader, obj, memberMap);
+                                var value = DeserializeMemberValue(bsonReader, memberMap);
+                                values[elementName] = value;
                             }
                         }
                         else
@@ -198,7 +221,7 @@ namespace MongoDB.Bson.Serialization
                     var memberMapBlock = ~memberMapBitArray[bitArrayIndex]; // notice that bits are flipped so 1's are now the missing elements
 
                     // work through this memberMapBlock of 32 elements
-                    for (;;)
+                    for (; ; )
                     {
                         // examine missing elements (memberMapBlock is shifted right as we work through the block)
                         for (; (memberMapBlock & 1) != 0; ++memberMapIndex, memberMapBlock >>= 1)
@@ -217,7 +240,11 @@ namespace MongoDB.Bson.Serialization
                                     memberMap.ElementName, fieldOrProperty, memberMap.MemberName, _classMap.ClassType.FullName);
                                 throw new FileFormatException(message);
                             }
-                            memberMap.ApplyDefaultValue(obj);
+
+                            if (obj != null)
+                            {
+                                memberMap.ApplyDefaultValue(obj);
+                            }
                         }
 
                         if (memberMapBlock == 0)
@@ -232,12 +259,20 @@ namespace MongoDB.Bson.Serialization
                     }
                 }
 
-                if (supportsInitialization != null)
+                if (obj != null)
                 {
-                    supportsInitialization.EndInit();
+                    if (supportsInitialization != null)
+                    {
+                        supportsInitialization.EndInit();
+                    }
+
+                    return obj;
+                }
+                else
+                {
+                    return CreateInstanceUsingConstructor(values);
                 }
 
-                return obj;
             }
         }
 
@@ -429,6 +464,97 @@ namespace MongoDB.Bson.Serialization
         }
 
         // private methods
+        private bool ConstructorIsBetterMatch(BsonConstructorMap lhs, BsonConstructorMap rhs)
+        {
+            // a constructor is considered a better match if it has more parameters
+            return lhs.Parameters.Count() > rhs.Parameters.Count();
+        }
+
+        private bool ConstructorMatches(BsonConstructorMap constructorMap, Dictionary<string, object> values)
+        {
+            // a constructor is a match if we have a value for each parameter (either a deserialized value or a default value)
+            foreach (var parameter in constructorMap.Parameters)
+            {
+                if (!values.ContainsKey(parameter.ElementName) && !parameter.HasDefaultValue)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private object CreateInstanceUsingConstructor(Dictionary<string, object> values)
+        {
+            // find best constructor
+            BsonConstructorMap bestConstructorMap = null;
+            foreach (var constructorMap in _classMap.ConstructorMaps)
+            {
+                if (ConstructorMatches(constructorMap, values))
+                {
+                    if (bestConstructorMap == null || ConstructorIsBetterMatch(constructorMap, bestConstructorMap))
+                    {
+                        bestConstructorMap = constructorMap;
+                    }
+                    else if (!ConstructorIsBetterMatch(bestConstructorMap, constructorMap))
+                    {
+                        throw new BsonSerializationException("Unable to determine best matching constructor.");
+                    }
+                }
+            }
+            if (bestConstructorMap == null)
+            {
+                throw new BsonSerializationException("No matching constructor found.");
+            }
+
+            // match values to constructor parameters
+            var arguments = new List<object>();
+            foreach (var parameter in bestConstructorMap.Parameters)
+            {
+                object argument;
+                if (values.TryGetValue(parameter.ElementName, out argument))
+                {
+                    arguments.Add(argument);
+                    values.Remove(parameter.ElementName);
+                }
+                else if (parameter.HasDefaultValue)
+                {
+                    arguments.Add(parameter.DefaultValue);
+                }
+                else
+                {
+                    throw new BsonInternalException("Unable to determine value for constructor parameter.");
+                }
+            }
+
+            var obj = bestConstructorMap.ConstructorInfo.Invoke(arguments.ToArray());
+
+            var supportsInitialization = obj as ISupportInitialize;
+            if (supportsInitialization != null)
+            {
+                supportsInitialization.BeginInit();
+            }
+
+            // try to process any left over values that weren't passed to the constructor
+            foreach (var keyValuePair in values)
+            {
+                var elementName = keyValuePair.Key;
+                var value = keyValuePair.Value;
+
+                var memberMap = _classMap.GetMemberMapForElement(elementName);
+                if (!memberMap.IsReadOnly)
+                {
+                    memberMap.Setter.Invoke(obj, value);
+                }
+            }
+
+            if (supportsInitialization != null)
+            {
+                supportsInitialization.EndInit();
+            }
+
+            return obj;
+        }
+
         private void DeserializeExtraElement(
             BsonReader bsonReader,
             object obj,
@@ -466,32 +592,31 @@ namespace MongoDB.Bson.Serialization
             }
         }
 
-        private void DeserializeMember(BsonReader bsonReader, object obj, BsonMemberMap memberMap)
+        private object DeserializeMemberValue(BsonReader bsonReader, BsonMemberMap memberMap)
         {
             try
             {
                 var nominalType = memberMap.MemberType;
-                object value = null;
 
                 var bsonType = bsonReader.GetCurrentBsonType();
                 if (bsonType == BsonType.Null && nominalType.IsInterface)
                 {
                     bsonReader.ReadNull();
-                    goto setvalue;
+                    return null;
                 }
                 else if (memberMap.MemberTypeIsBsonValue)
                 {
                     if (bsonType == BsonType.Document && IsCSharpNullRepresentation(bsonReader))
                     {
                         // if IsCSharpNullRepresentation returns true it will have consumed the document representing C# null
-                        goto setvalue;
+                        return null;
                     }
 
                     // handle BSON null for backward compatibility with existing data (new data would have _csharpnull)
                     if (bsonType == BsonType.Null && (nominalType != typeof(BsonValue) && nominalType != typeof(BsonNull)))
                     {
                         bsonReader.ReadNull();
-                        goto setvalue;
+                        return null;
                     }
                 }
 
@@ -505,17 +630,15 @@ namespace MongoDB.Bson.Serialization
                     var discriminatorConvention = memberMap.GetDiscriminatorConvention();
                     actualType = discriminatorConvention.GetActualType(bsonReader, nominalType); // returns nominalType if no discriminator found
                 }
-                var serializer = memberMap.GetSerializer(actualType);
-                value = serializer.Deserialize(bsonReader, nominalType, actualType, memberMap.SerializationOptions);
 
-                setvalue:
-                memberMap.Setter(obj, value);
+                var serializer = memberMap.GetSerializer(actualType);
+                return serializer.Deserialize(bsonReader, nominalType, actualType, memberMap.SerializationOptions);
             }
             catch (Exception ex)
             {
                 var message = string.Format(
                     "An error occurred while deserializing the {0} {1} of class {2}: {3}", // terminating period provided by nested message
-                    memberMap.MemberName, (memberMap.MemberInfo.MemberType == MemberTypes.Field) ? "field" : "property", obj.GetType().FullName, ex.Message);
+                    memberMap.MemberName, (memberMap.MemberInfo.MemberType == MemberTypes.Field) ? "field" : "property", memberMap.ClassMap.ClassType.FullName, ex.Message);
                 throw new FileFormatException(message, ex);
             }
         }
