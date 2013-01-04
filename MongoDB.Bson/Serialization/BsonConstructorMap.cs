@@ -25,7 +25,7 @@ namespace MongoDB.Bson.Serialization
     {
         // private fields
         private readonly ConstructorInfo _constructorInfo;
-        private readonly IEnumerable<BsonConstructorParameter> _parameters;
+        private readonly IEnumerable<BsonMemberMap> _parameters;
 
         // constructors
         /// <summary>
@@ -33,7 +33,7 @@ namespace MongoDB.Bson.Serialization
         /// </summary>
         /// <param name="constructorInfo">The constructor info.</param>
         /// <param name="parameters">The parameters.</param>
-        public BsonConstructorMap(ConstructorInfo constructorInfo, IEnumerable<BsonConstructorParameter> parameters)
+        public BsonConstructorMap(ConstructorInfo constructorInfo, IEnumerable<BsonMemberMap> parameters)
         {
             _constructorInfo = constructorInfo;
             _parameters = parameters;
@@ -51,7 +51,7 @@ namespace MongoDB.Bson.Serialization
         /// <summary>
         /// Gets the parameters.
         /// </summary>
-        public IEnumerable<BsonConstructorParameter> Parameters
+        public IEnumerable<BsonMemberMap> Parameters
         {
             get { return _parameters; }
         }

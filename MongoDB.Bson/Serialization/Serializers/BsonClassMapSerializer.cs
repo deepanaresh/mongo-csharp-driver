@@ -475,7 +475,7 @@ namespace MongoDB.Bson.Serialization
             // a constructor is a match if we have a value for each parameter (either a deserialized value or a default value)
             foreach (var parameter in constructorMap.Parameters)
             {
-                if (!values.ContainsKey(parameter.ElementName) && !parameter.HasDefaultValue)
+                if (!values.ContainsKey(parameter.ElementName) && !parameter.IsDefaultValueSpecified)
                 {
                     return false;
                 }
@@ -516,7 +516,7 @@ namespace MongoDB.Bson.Serialization
                     arguments.Add(argument);
                     values.Remove(parameter.ElementName);
                 }
-                else if (parameter.HasDefaultValue)
+                else if (parameter.IsDefaultValueSpecified)
                 {
                     arguments.Add(parameter.DefaultValue);
                 }

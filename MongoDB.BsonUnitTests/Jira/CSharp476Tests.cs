@@ -47,15 +47,10 @@ namespace MongoDB.BsonUnitTests.Jira
             BsonClassMap.RegisterClassMap<C>(cm =>
             {
                 cm.SetIsImmutable(true);
-                var constructorParameters = new[]
-                {
-                    new BsonConstructorParameter(typeof(int), "X"),
-                    new BsonConstructorParameter(typeof(int), "Y")
-                };
-                cm.MapConstructor(constructorParameters);
                 cm.MapMember(c => c.X);
                 cm.MapMember(c => c.Y);
                 cm.MapMember(c => c.Z);
+                cm.MapConstructor(new [] { cm.GetMemberMap(c => c.X), cm.GetMemberMap(c => c.Y) });
             });
         }
 

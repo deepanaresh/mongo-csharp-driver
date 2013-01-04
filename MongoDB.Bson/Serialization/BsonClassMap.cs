@@ -645,7 +645,7 @@ namespace MongoDB.Bson.Serialization
         /// </summary>
         /// <param name="parameters">The parameters.</param>
         /// <returns>The constructor map.</returns>
-        public BsonConstructorMap MapConstructor(IEnumerable<BsonConstructorParameter> parameters)
+        public BsonConstructorMap MapConstructor(IEnumerable<BsonMemberMap> parameters)
         {
             if (parameters == null)
             {
@@ -655,7 +655,7 @@ namespace MongoDB.Bson.Serialization
             if (_frozen) { ThrowFrozenException(); }
 
             var bindingAttr = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            var types = parameters.Select(p => p.Type).ToArray();
+            var types = parameters.Select(m => m.MemberType).ToArray();
             var constructorInfo = _classType.GetConstructor(bindingAttr, null, types, null);
             if (constructorInfo == null)
             {
