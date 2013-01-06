@@ -67,7 +67,7 @@ namespace MongoDB.Driver.Security.Mechanisms
             }
             catch (Win32Exception ex)
             {
-                if (!(_identity is SystemMongoClientIdentity))
+                if (!Object.ReferenceEquals(_identity, MongoClientIdentity.System))
                 {
                     throw new MongoSecurityException("Unable to initialize security context. Ensure the username and password are correct.", ex);
                 }

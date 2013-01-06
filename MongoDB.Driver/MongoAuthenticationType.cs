@@ -13,6 +13,10 @@ namespace MongoDB.Driver
         /// <summary>
         /// Authenticate to the server using GSSAPI.
         /// </summary>
-        GSSAPI
+        Gssapi,
+        /// <summary>
+        /// Authenticate to the server using a Negotiation.
+        /// </summary>
+        Negotiate
     }
 }

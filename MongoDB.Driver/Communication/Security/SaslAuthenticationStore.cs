@@ -51,7 +51,7 @@ namespace MongoDB.Driver.Communication.Security
         {
             using (var conversation = new SaslConversation())
             {
-                var mechanism = GetMechanism(_connection, _identity.Realm, _identity);
+                var mechanism = GetMechanism(_connection, _identity.Source, _identity);
                 var currentStep = conversation.Initiate(mechanism);
 
                 var command = new CommandDocument
@@ -63,7 +63,7 @@ namespace MongoDB.Driver.Communication.Security
 
                 while (true)
                 {
-                    var result = _connection.RunCommand(_identity.Realm, QueryFlags.SlaveOk, command, true);
+                    var result = _connection.RunCommand(_identity.Source, QueryFlags.SlaveOk, command, true);
                     var code = result.Response["code"].AsInt32;
                     if (code != 0)
                     {
@@ -93,7 +93,7 @@ namespace MongoDB.Driver.Communication.Security
 
             switch (identity.AuthenticationType)
             {
-                case MongoAuthenticationType.GSSAPI:
+                case MongoAuthenticationType.Gssapi:
                     if (useGsasl)
                     {
                         return new GsaslGssApiMechanism(

@@ -10,53 +10,33 @@ namespace MongoDB.Driver
     /// <summary>
     /// Represents the identity to be used when talking with mongodb.
     /// </summary>
-    public class MongoClientIdentity
+    public abstract class MongoClientIdentity
     {
         // private static fields
         private readonly static MongoClientIdentity _system = SystemMongoClientIdentity.Instance;
 
         // private fields
         private readonly MongoAuthenticationType _authenticationType;
-        private SecureString _password;
+        private readonly SecureString _password;
+        private readonly string _source;
         private readonly string _username;
 
         // constructors
         /// <summary>
         /// Initializes a new instance of the <see cref="MongoClientIdentity" /> class.
         /// </summary>
-        /// <remarks>
-        /// This is here to support SystemMongoClientIdentity.
-        /// </remarks>
-        internal MongoClientIdentity()
-            : this("", "", MongoAuthenticationType.GSSAPI)
-        { }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="MongoClientIdentity" /> class.
-        /// </summary>
         /// <param name="username">The username.</param>
         /// <param name="password">The password.</param>
+        /// <param name="source">The source.</param>
         /// <param name="authenticationType">Type of the authentication.</param>
-        public MongoClientIdentity(string username, string password, MongoAuthenticationType authenticationType)  
-        {
-            _username = username;
-            _password = CreateSecureString(password);
-            _authenticationType = authenticationType;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="MongoClientIdentity" /> class.
-        /// </summary>
-        /// <param name="username">The username.</param>
-        /// <param name="password">The password.</param>
-        /// <param name="authenticationType">Type of the authentication.</param>
-        public MongoClientIdentity(string username, SecureString password, MongoAuthenticationType authenticationType)
+        internal MongoClientIdentity(string username, SecureString password, string source, MongoAuthenticationType authenticationType)
         {
             _username = username;
             if (password != null)
             {
                 _password = password.Copy();
             }
+            _source = source;
             _authenticationType = authenticationType;
         }
 
@@ -67,6 +47,75 @@ namespace MongoDB.Driver
         public static MongoClientIdentity System
         {
             get { return _system; }
+        }
+
+        // public static methods
+        /// <summary>
+        /// Creates a Gssapi MongoClientIdentity.
+        /// </summary>
+        /// <param name="username">The username.</param>
+        /// <param name="password">The password.</param>
+        /// <returns>An identity for authenticating with Gssapi.</returns>
+        public static MongoClientIdentity Gssapi(string username, string password)
+        {
+            return new GssapiMongoClientIdentity(username, CreateSecureString(password));
+        }
+
+        /// <summary>
+        /// Creates a Gssapi MongoClientIdentity.
+        /// </summary>
+        /// <param name="username">The username.</param>
+        /// <param name="password">The password.</param>
+        /// <returns>An identity for authenticating with Gssapi.</returns>
+        public static MongoClientIdentity Gssapi(string username, SecureString password)
+        {
+            if (username == null)
+            {
+                throw new ArgumentNullException("username");
+            }
+            if (password == null)
+            {
+                throw new ArgumentNullException("password");
+            }
+
+            return new GssapiMongoClientIdentity(username, password);
+        }
+
+        /// <summary>
+        /// Creates a Negotiated MongoClientIdentity.
+        /// </summary>
+        /// <param name="username">The username.</param>
+        /// <param name="password">The password.</param>
+        /// <param name="source">The source.</param>
+        /// <returns>An identity for authenticating by negotiating.</returns>
+        public static MongoClientIdentity Negotiate(string username, string password, string source)
+        {
+            return Negotiate(username, CreateSecureString(password), source);
+        }
+
+        /// <summary>
+        /// Creates a Negotiated MongoClientIdentity.
+        /// </summary>
+        /// <param name="username">The username.</param>
+        /// <param name="password">The password.</param>
+        /// <param name="source">The source.</param>
+        /// <returns>An identity for authenticating by negotiating.</returns>
+        public static MongoClientIdentity Negotiate(string username, SecureString password, string source)
+        {
+            if (username == null)
+            {
+                throw new ArgumentNullException("username");
+            }
+            if (password == null)
+            {
+                throw new ArgumentNullException("password");
+            }
+            if (source == null)
+            {
+                throw new ArgumentNullException("source");
+            }
+
+            return new NegotiatedMongoClientIdentity(username, password, source);
         }
 
         // public properties
@@ -119,21 +168,19 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
+        /// Gets the source used to verify the credentials.
+        /// </summary>
+        public string Source
+        {
+            get { return _source; }
+        }
+
+        /// <summary>
         /// Gets the username.
         /// </summary>
         public string Username
         {
             get { return _username; }
-        }
-
-        // internal properties
-        /// <summary>
-        /// Gets the realm.
-        /// </summary>
-        /// <remarks>This is here currently as a placeholder. It will become public with server 2.6.</remarks>
-        internal string Realm
-        {
-            get { return "$sasl"; }
         }
 
         // private static methods
@@ -173,16 +220,29 @@ namespace MongoDB.Driver
                 }
             }
         }
-    }
 
-    /// <summary>
-    /// Represents the process' identity.
-    /// </summary>
-    internal class SystemMongoClientIdentity : MongoClientIdentity
-    {
-        public readonly static SystemMongoClientIdentity Instance = new SystemMongoClientIdentity();
+        // nested classes
+        private class GssapiMongoClientIdentity : MongoClientIdentity
+        {
+            public GssapiMongoClientIdentity(string username, SecureString password)
+                : base(username, password, "$external", MongoAuthenticationType.Gssapi)
+            { }
+        }
 
-        private SystemMongoClientIdentity()
-        { }
+        private class NegotiatedMongoClientIdentity : MongoClientIdentity
+        {
+            public NegotiatedMongoClientIdentity(string username, SecureString password, string source)
+                : base(username, password, source, MongoAuthenticationType.Negotiate)
+            { }
+        }
+
+        private class SystemMongoClientIdentity : GssapiMongoClientIdentity
+        {
+            public readonly static SystemMongoClientIdentity Instance = new SystemMongoClientIdentity();
+
+            private SystemMongoClientIdentity()
+                : base(null, (SecureString)null)
+            { }
+        }
     }
 }

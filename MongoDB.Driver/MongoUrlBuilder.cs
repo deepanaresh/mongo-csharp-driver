@@ -908,7 +908,7 @@ namespace MongoDB.Driver
                     }
                 }
 
-                HandleCredentials(username, password, authType);
+                HandleCredentials(username, password, databaseName, authType);
             }
             else
             {
@@ -916,7 +916,7 @@ namespace MongoDB.Driver
             }
         }
 
-        private void HandleCredentials(string username, string password, string authType)
+        private void HandleCredentials(string username, string password, string databaseName, string authType)
         {
             authType = authType ?? AUTH_TYPE_DEFAULT;
             switch (authType.ToLower())
@@ -931,15 +931,22 @@ namespace MongoDB.Driver
                 case "gssapi":
                     if (!string.IsNullOrEmpty(username))
                     {
-                        _identity = new MongoClientIdentity(username, password, MongoAuthenticationType.GSSAPI);
+                        _identity = MongoClientIdentity.Gssapi(username, password);
                     }
                     else
                     {
                         _identity = MongoClientIdentity.System;
                     }
                     break;
+                case "negotiate":
+                    if (string.IsNullOrEmpty(databaseName))
+                    {
+                        throw new FormatException("NEGOTIATE credentials must be specified in conjunction with a databaseName.");
+                    }
+                    _identity = MongoClientIdentity.Negotiate(username, password, databaseName);
+                    break;
                 default:
-                    var message = string.Format("{0} is not a valid authMechanism value. MONGO-CR and GSSAPI are the only valid authMechanism values.", authType);
+                    var message = string.Format("{0} is not a valid authType value. MONGO-CR, GSSAPI, and NEGOTIATE are the only valid authType values.", authType);
                     throw new ArgumentException(message);
             }
         }
@@ -1000,18 +1007,21 @@ namespace MongoDB.Driver
                     firstServer = false;
                 }
             }
-            if (_databaseName != null)
+            if (_databaseName != null || _identity != null && _identity.AuthenticationType == MongoAuthenticationType.Negotiate)
             {
                 url.Append("/");
-                url.Append(_databaseName);
+                url.Append(_databaseName ?? _identity.Source);
             }
             var query = new StringBuilder();
             if (_identity != null)
             {
                 switch (_identity.AuthenticationType)
                 {
-                    case MongoAuthenticationType.GSSAPI:
+                    case MongoAuthenticationType.Gssapi:
                         query.Append("authType=GSSAPI;");
+                        break;
+                    case MongoAuthenticationType.Negotiate:
+                        query.Append("authType=NEGOTIATE");
                         break;
                     default:
                         throw new NotSupportedException(string.Format("Unknown MongoAuthenticationType {0}", _identity.AuthenticationType));

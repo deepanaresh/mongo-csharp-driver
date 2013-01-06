@@ -57,7 +57,7 @@ namespace MongoDB.Driver.Security.Sspi
             finally
             {
                 uint result;
-                if (identity is SystemMongoClientIdentity)
+                if (Object.ReferenceEquals(identity, MongoClientIdentity.System))
                 {
                     result = Win32.AcquireCredentialsHandle(
                         null,
