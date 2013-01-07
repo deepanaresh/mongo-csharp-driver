@@ -14,6 +14,7 @@
 */
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace MongoDB.Bson.Serialization
@@ -24,22 +25,31 @@ namespace MongoDB.Bson.Serialization
     public class BsonConstructorMap
     {
         // private fields
+        private BsonClassMap _classMap;
         private readonly ConstructorInfo _constructorInfo;
-        private readonly IEnumerable<BsonMemberMap> _parameters;
+        private IEnumerable<BsonMemberMap> _parameters;
 
         // constructors
         /// <summary>
         /// Initializes a new instance of the BsonConstructorMap class.
         /// </summary>
+        /// <param name="classMap">The class map.</param>
         /// <param name="constructorInfo">The constructor info.</param>
-        /// <param name="parameters">The parameters.</param>
-        public BsonConstructorMap(ConstructorInfo constructorInfo, IEnumerable<BsonMemberMap> parameters)
+        public BsonConstructorMap(BsonClassMap classMap, ConstructorInfo constructorInfo)
         {
+            _classMap = classMap;
             _constructorInfo = constructorInfo;
-            _parameters = parameters;
         }
 
         // public properties
+        /// <summary>
+        /// Gets the class map that this member map belongs to.
+        /// </summary>
+        public BsonClassMap ClassMap
+        {
+            get { return _classMap; }
+        }
+
         /// <summary>
         /// Gets the constructor info.
         /// </summary>
@@ -54,6 +64,18 @@ namespace MongoDB.Bson.Serialization
         public IEnumerable<BsonMemberMap> Parameters
         {
             get { return _parameters; }
+        }
+
+        // public methods
+        /// <summary>
+        /// Sets the parameters for the constructor map.
+        /// </summary>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns>The constructor map.</returns>
+        public BsonConstructorMap SetParameters(IEnumerable<BsonMemberMap> parameters)
+        {
+            _parameters = parameters.ToArray(); // force execution of any LINQ queries
+            return this;
         }
     }
 }

@@ -29,28 +29,31 @@ namespace MongoDB.BsonUnitTests.Jira
             private int _y;
             private int _z;
 
-            // [BsonConstructor("X", "Y")]
+            [BsonConstructor()] // NamedParameterConstructorMapConvention will match the parameters to members
+            //[BsonConstructor("X", "Y")]
             public C(int x, int y)
             {
                 _x = x;
                 _y = y;
             }
 
+            [BsonElement] // opt-in read-only property
             public int X { get { return _x; } }
+            [BsonElement] // opt-in read-only property
             public int Y { get { return _y; } }
             public int Z { get { return _z; } set { _z = value; } }
         }
 
-        static CSharp476Tests()
-        {
-            BsonClassMap.RegisterClassMap<C>(cm =>
-            {
-                cm.MapMember(c => c.X);
-                cm.MapMember(c => c.Y);
-                cm.MapMember(c => c.Z);
-                cm.MapConstructor(new [] { cm.GetMemberMap(c => c.X), cm.GetMemberMap(c => c.Y) });
-            });
-        }
+        //static CSharp476Tests()
+        //{
+        //    BsonClassMap.RegisterClassMap<C>(cm =>
+        //    {
+        //        cm.MapMember(c => c.X);
+        //        cm.MapMember(c => c.Y);
+        //        cm.MapMember(c => c.Z);
+        //        cm.MapConstructor(c => c.X, c => c.Y);
+        //    });
+        //}
 
         [Test]
         public void TestDeserialization()
@@ -66,7 +69,8 @@ namespace MongoDB.BsonUnitTests.Jira
         public void TestSerialization()
         {
             var c = new C(1, 2) { Z = 3 };
-            var expected = "{ 'X' : 1, 'Y' : 2, 'Z' : 3 }".Replace("'", "\"");
+            //var expected = "{ 'X' : 1, 'Y' : 2, 'Z' : 3 }".Replace("'", "\"");
+            var expected = "{ 'Z' : 3, 'X' : 1, 'Y' : 2 }".Replace("'", "\""); // TODO: can the weird order be fixed (it's due to the order in which the fields were automapped)
             Assert.AreEqual(expected, c.ToJson());
         }
     }

@@ -640,6 +640,29 @@ namespace MongoDB.Bson.Serialization
         }
 
         /// <summary>
+        /// Creates a constructor map for a constructor and adds it to the class map.
+        /// </summary>
+        /// <param name="constructorInfo">The constructor info.</param>
+        /// <returns>The constructor map (so method calls can be chained).</returns>
+        public BsonConstructorMap MapConstructor(ConstructorInfo constructorInfo)
+        {
+            if (constructorInfo == null)
+            {
+                throw new ArgumentNullException("constructorInfo");
+            }
+            EnsureMemberInfoIsForThisClass(constructorInfo);
+
+            if (_frozen) { ThrowFrozenException(); }
+            var constructorMap = _constructorMaps.Find(m => m.ConstructorInfo == constructorInfo);
+            if (constructorMap == null)
+            {
+                constructorMap = new BsonConstructorMap(this, constructorInfo);
+                _constructorMaps.Add(constructorMap);
+            }
+            return constructorMap;
+        }
+
+        /// <summary>
         /// Creates a constructor map.
         /// </summary>
         /// <param name="parameters">The parameters.</param>
@@ -661,14 +684,9 @@ namespace MongoDB.Bson.Serialization
                 throw new ArgumentException("No matching constructor found.");
             }
 
-            if (_constructorMaps.Any(m => m.ConstructorInfo == constructorInfo))
-            {
-                throw new InvalidOperationException("The matching constructor has already been mapped.");
-            }
+            var constructorMap = MapConstructor(constructorInfo);
 
-            var constructorMap = new BsonConstructorMap(constructorInfo, parameters);
-            _constructorMaps.Add(constructorMap);
-
+            constructorMap.SetParameters(parameters);
             return constructorMap;
         }
 
@@ -813,6 +831,10 @@ namespace MongoDB.Bson.Serialization
             {
                 throw new ArgumentNullException("memberInfo");
             }
+            if (!(memberInfo is FieldInfo) && !(memberInfo is PropertyInfo))
+            {
+                throw new ArgumentException("MemberInfo must be either a FieldInfo or a PropertyInfo.", "memberInfo");
+            }
             EnsureMemberInfoIsForThisClass(memberInfo);
 
             if (_frozen) { ThrowFrozenException(); }
@@ -854,6 +876,7 @@ namespace MongoDB.Bson.Serialization
         {
             if (_frozen) { ThrowFrozenException(); }
 
+            _constructorMaps.Clear();
             _creator = null;
             _declaredMemberMaps.Clear();
             _discriminator = _classType.Name;
@@ -984,6 +1007,26 @@ namespace MongoDB.Bson.Serialization
         {
             if (_frozen) { ThrowFrozenException(); }
             _isRootClass = isRootClass;
+        }
+
+        /// <summary>
+        /// Removes a constructor map from the class map.
+        /// </summary>
+        /// <param name="constructorInfo">The constructor info.</param>
+        public void UnmapConstructor(ConstructorInfo constructorInfo)
+        {
+            if (constructorInfo == null)
+            {
+                throw new ArgumentNullException("constructorInfo");
+            }
+            EnsureMemberInfoIsForThisClass(constructorInfo);
+
+            if (_frozen) { ThrowFrozenException(); }
+            var constructorMap = _constructorMaps.Find(m => m.ConstructorInfo == constructorInfo);
+            if (constructorMap != null)
+            {
+                _constructorMaps.Remove(constructorMap);
+            }
         }
 
         /// <summary>
@@ -1255,6 +1298,17 @@ namespace MongoDB.Bson.Serialization
         {
             var memberName = GetMemberNameFromLambda(memberLambda);
             return GetMemberMap(memberName);
+        }
+
+        /// <summary>
+        /// Creates a constructor map and adds it to the class map.
+        /// </summary>
+        /// <param name="memberLambdas">Lambda expressions specifying the members.</param>
+        /// <returns>The member map.</returns>
+        public BsonConstructorMap MapConstructor(params Expression<Func<TClass, object>>[] memberLambdas)
+        {
+            var memberMaps = memberLambdas.Select(lambda => { var memberInfo = GetMemberInfoFromLambda(lambda); return MapMember(memberInfo); });
+            return MapConstructor(memberMaps);
         }
 
         /// <summary>

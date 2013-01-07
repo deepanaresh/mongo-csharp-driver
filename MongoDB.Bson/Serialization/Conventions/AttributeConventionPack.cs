@@ -60,7 +60,7 @@ namespace MongoDB.Bson.Serialization.Conventions
         }
 
         // nested classes
-        private class AttributeConvention : ConventionBase, IClassMapConvention, IMemberMapConvention, IPostProcessingConvention
+        private class AttributeConvention : ConventionBase, IClassMapConvention, IConstructorMapConvention, IMemberMapConvention, IPostProcessingConvention
         {
             // public methods
             public void Apply(BsonClassMap classMap)
@@ -81,8 +81,17 @@ namespace MongoDB.Bson.Serialization.Conventions
 #pragma warning restore 618
 
                 OptInMembersWithBsonMemberMapModifierAttribute(classMap);
+                OptInConstructorsWithBsonConstructorMapModifierAttribute(classMap);
                 IgnoreMembersWithBsonIgnoreAttribute(classMap);
                 ThrowForDuplicateMemberMapAttributes(classMap);
+            }
+
+            public void Apply(BsonConstructorMap constructorMap)
+            {
+                foreach (IBsonConstructorMapAttribute attribute in constructorMap.ConstructorInfo.GetCustomAttributes(typeof(IBsonConstructorMapAttribute), false))
+                {
+                    attribute.Apply(constructorMap);
+                }
             }
 
             public void Apply(BsonMemberMap memberMap)
@@ -119,6 +128,19 @@ namespace MongoDB.Bson.Serialization.Conventions
                     .SingleOrDefault();
 
                 return usageAttribute == null || usageAttribute.AllowMultipleMembers;
+            }
+
+            private void OptInConstructorsWithBsonConstructorMapModifierAttribute(BsonClassMap classMap)
+            {
+                // let other constructors opt-in if they have any IBsonConstructorMapAttibute attributes
+                foreach (var constructorInfo in classMap.ClassType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
+                {
+                    var hasAttribute = constructorInfo.GetCustomAttributes(typeof(IBsonConstructorMapAttribute), false).Any();
+                    if (hasAttribute)
+                    {
+                        classMap.MapConstructor(constructorInfo);
+                    }
+                }
             }
 
             private void OptInMembersWithBsonMemberMapModifierAttribute(BsonClassMap classMap)
