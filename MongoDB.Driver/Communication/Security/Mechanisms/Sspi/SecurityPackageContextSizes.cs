@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
+﻿using System.Runtime.InteropServices;
 
-namespace MongoDB.Driver.Security.Sspi
+namespace MongoDB.Driver.Security.Mechanisms.Sspi
 {
     /// <summary>
     /// A SecPkgContext_Sizes structure.

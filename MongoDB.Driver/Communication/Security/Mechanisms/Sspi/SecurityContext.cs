@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 
-namespace MongoDB.Driver.Security.Sspi
+namespace MongoDB.Driver.Security.Mechanisms.Sspi
 {
     /// <summary>
     /// A wrapper around the SspiHandle structure specificly used as a security context handle.

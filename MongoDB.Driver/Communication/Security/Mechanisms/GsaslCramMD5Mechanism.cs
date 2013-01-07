@@ -1,8 +1,4 @@
-﻿using MongoDB.Driver.Security.Gsasl;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
+﻿using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -14,20 +10,17 @@ namespace MongoDB.Driver.Security.Mechanisms
     internal class GsaslCramMD5Mechanism : AbstractGsaslMechanism
     {
         // private fields
-        private readonly NetworkCredential _credential;
-        private readonly string _databaseName;
+        private readonly MongoClientIdentity _identity;
 
         // constructors
         /// <summary>
         /// Initializes a new instance of the <see cref="GsaslCramMD5Mechanism" /> class.
         /// </summary>
-        /// <param name="databaseName">Name of the database.</param>
-        /// <param name="credential">The credential.</param>
-        public GsaslCramMD5Mechanism(string databaseName, NetworkCredential credential)
+        /// <param name="identity">The identity.</param>
+        public GsaslCramMD5Mechanism(MongoClientIdentity identity)
             : base("CRAM-MD5")
         {
-            _databaseName = databaseName;
-            _credential = credential;
+            _identity = identity;
         }
 
         // protected methods
@@ -37,14 +30,14 @@ namespace MongoDB.Driver.Security.Mechanisms
         /// <returns>The properties.</returns>
         protected override IEnumerable<KeyValuePair<string, string>> GetProperties()
         {
-            yield return new KeyValuePair<string, string>("AUTHID", CreateUsername());
+            yield return new KeyValuePair<string, string>("AUTHID", _identity.Username);
             yield return new KeyValuePair<string, string>("PASSWORD", CreatePassword());
         }
         
         // private methods
         private string CreatePassword()
         {
-            var mongoPassword = _credential.UserName + ":mongo:" + _credential.Password;
+            var mongoPassword = _identity.Username + ":mongo:" + _identity.Password;
             byte[] password;
             using (var md5 = MD5.Create())
             {
@@ -59,11 +52,6 @@ namespace MongoDB.Driver.Security.Mechanisms
             }
 
             return builder.ToString();            
-        }
-
-        private string CreateUsername()
-        {
-            return _databaseName + "$" + _credential.UserName;
         }
     }
 }

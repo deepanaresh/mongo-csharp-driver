@@ -1,8 +1,6 @@
-﻿using MongoDB.Driver.Internal;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using MongoDB.Driver.Internal;
 
 namespace MongoDB.Driver.Communication.Security
 {

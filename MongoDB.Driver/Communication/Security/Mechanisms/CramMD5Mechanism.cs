@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 
 namespace MongoDB.Driver.Security.Mechanisms
@@ -13,19 +9,16 @@ namespace MongoDB.Driver.Security.Mechanisms
     internal class CramMD5Mechanism : ISaslMechanism
     {
         // private fields
-        private readonly string _databaseName;
-        private readonly NetworkCredential _credential;
+        private readonly MongoClientIdentity _identity;
 
         // constructors
         /// <summary>
         /// Initializes a new instance of the <see cref="CramMD5Mechanism" /> class.
         /// </summary>
-        /// <param name="databaseName">Name of the database.</param>
-        /// <param name="credential">The credential.</param>
-        public CramMD5Mechanism(string databaseName, NetworkCredential credential)
+        /// <param name="identity">The identity.</param>
+        public CramMD5Mechanism(MongoClientIdentity identity)
         {
-            _databaseName = databaseName;
-            _credential = credential;
+            _identity = identity;
         }
 
         // private static methods
@@ -59,7 +52,7 @@ namespace MongoDB.Driver.Security.Mechanisms
         /// <returns>An ISaslStep.</returns>
         public ISaslStep Transition(SaslConversation conversation, byte[] input)
         {
-            var mongoPassword = _credential.UserName + ":mongo:" + _credential.Password;
+            var mongoPassword = _identity.Username + ":mongo:" + _identity.Password;
             byte[] password;
             using (var md5 = MD5.Create())
             {
@@ -74,7 +67,7 @@ namespace MongoDB.Driver.Security.Mechanisms
                 digest = hmacMd5.ComputeHash(input);
             }
 
-            var response = _databaseName + "$" + _credential.UserName + " " + ToHexString(digest);
+            var response = _identity.Username + " " + ToHexString(digest);
             var outBytes = Encoding.ASCII.GetBytes(response);
 
             return new SaslCompletionStep(outBytes);

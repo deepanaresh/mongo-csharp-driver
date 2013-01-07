@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.Serialization;
-using System.Text;
 
-namespace MongoDB.Driver.Security.Sspi
+namespace MongoDB.Driver.Security.Mechanisms.Sspi
 {
     /// <summary>
     /// Thrown from a win32 wrapped operation.

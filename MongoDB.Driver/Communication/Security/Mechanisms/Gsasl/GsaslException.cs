@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.Serialization;
-using System.Text;
 
-namespace MongoDB.Driver.Security.Gsasl
+namespace MongoDB.Driver.Security.Mechanisms.Gsasl
 {
     /// <summary>
     /// Thrown from a gsasl wrapped operation.

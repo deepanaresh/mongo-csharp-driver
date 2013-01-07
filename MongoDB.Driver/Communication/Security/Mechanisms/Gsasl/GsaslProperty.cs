@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace MongoDB.Driver.Security.Gsasl
+﻿
+namespace MongoDB.Driver.Security.Mechanisms.Gsasl
 {
     /// <summary>
     /// Valid properties used in a GsaslSession.

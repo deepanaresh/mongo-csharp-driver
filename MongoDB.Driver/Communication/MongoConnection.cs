@@ -14,7 +14,6 @@
 */
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -22,7 +21,6 @@ using System.Security.Cryptography.X509Certificates;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
-using MongoDB.Driver.Security;
 using MongoDB.Driver.Communication.Security;
 
 namespace MongoDB.Driver.Internal

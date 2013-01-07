@@ -1,10 +1,7 @@
-﻿using MongoDB.Driver.Internal;
+﻿using System;
+using MongoDB.Driver.Internal;
 using MongoDB.Driver.Security;
 using MongoDB.Driver.Security.Mechanisms;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace MongoDB.Driver.Communication.Security
 {
@@ -51,7 +48,7 @@ namespace MongoDB.Driver.Communication.Security
         {
             using (var conversation = new SaslConversation())
             {
-                var mechanism = GetMechanism(_connection, _identity.Source, _identity);
+                var mechanism = GetMechanism(_connection, _identity);
                 var currentStep = conversation.Initiate(mechanism);
 
                 var command = new CommandDocument
@@ -86,7 +83,7 @@ namespace MongoDB.Driver.Communication.Security
             }
         }
 
-        private ISaslMechanism GetMechanism(MongoConnection connection, string databaseName, MongoClientIdentity identity)
+        private ISaslMechanism GetMechanism(MongoConnection connection, MongoClientIdentity identity)
         {
             // TODO: provide an override to force the use of gsasl.
             bool useGsasl = !Environment.OSVersion.Platform.ToString().Contains("Win");
@@ -96,7 +93,7 @@ namespace MongoDB.Driver.Communication.Security
                 case MongoAuthenticationType.Gssapi:
                     if (useGsasl)
                     {
-                        return new GsaslGssApiMechanism(
+                        return new GsaslGssapiMechanism(
                             connection.ServerInstance.Address.Host,
                             identity);
                     }
@@ -106,6 +103,8 @@ namespace MongoDB.Driver.Communication.Security
                             connection.ServerInstance.Address.Host,
                             identity);
                     }
+                case MongoAuthenticationType.Negotiate:
+                    return Negotiate(connection, identity);
             }
 
             throw new NotSupportedException(string.Format("Unsupported credentials type {0}.", identity.AuthenticationType));
@@ -114,6 +113,26 @@ namespace MongoDB.Driver.Communication.Security
         private void HandleError(CommandResult result, int code)
         {
             throw new MongoException(string.Format("Error: {0} - {1}", code, result.Response["errmsg"].AsString));
+        }
+
+        private ISaslMechanism Negotiate(MongoConnection connection, MongoClientIdentity identity)
+        {
+            var command = new CommandDocument
+            {
+                { "saslStart", 1 },
+                { "payload", new byte[0] }
+            };
+
+            var result = _connection.RunCommand(_identity.Source, QueryFlags.SlaveOk, command, true);
+            var code = result.Response["code"].AsInt32;
+            if (code != 0)
+            {
+                HandleError(result, code);
+            }
+
+            // read mechanisms...
+
+            return new CramMD5Mechanism(identity);
         }
     }
 }

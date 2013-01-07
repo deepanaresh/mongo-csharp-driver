@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace MongoDB.Driver.Security.Mechanisms
 {
     /// <summary>
     /// A mechanism implementing the GssApi specification.
     /// </summary>
-    internal class GsaslGssApiMechanism : AbstractGsaslMechanism
+    internal class GsaslGssapiMechanism : AbstractGsaslMechanism
     {
         // private fields
         private readonly string _authorizationId;
@@ -18,11 +14,11 @@ namespace MongoDB.Driver.Security.Mechanisms
 
         // constructors
         /// <summary>
-        /// Initializes a new instance of the <see cref="GsaslGssApiMechanism" /> class.
+        /// Initializes a new instance of the <see cref="GsaslGssapiMechanism" /> class.
         /// </summary>
         /// <param name="serverName">Name of the server.</param>
         /// <param name="identity">The identity.</param>
-        public GsaslGssApiMechanism(string serverName, MongoClientIdentity identity)
+        public GsaslGssapiMechanism(string serverName, MongoClientIdentity identity)
             : base("GSSAPI")
         {
             _authorizationId = identity.Username;
