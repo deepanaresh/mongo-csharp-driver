@@ -128,7 +128,7 @@ namespace MongoDB.Bson.Serialization
                 Dictionary<string, object> values = null;
                 object obj = null;
                 ISupportInitialize supportsInitialization = null;
-                if (_classMap.ConstructorMaps.Count() > 0)
+                if (_classMap.HasConstructorMaps)
                 {
                     // for constructor-based deserialization we first gather the values in a dictionary and then call a matching constructor
                     values = new Dictionary<string, object>();

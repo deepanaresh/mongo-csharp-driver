@@ -172,6 +172,14 @@ namespace MongoDB.Bson.Serialization
         }
 
         /// <summary>
+        /// Gets whether this class map has any constructor maps.
+        /// </summary>
+        public bool HasConstructorMaps
+        {
+            get { return _constructorMaps.Count > 0; }
+        }
+
+        /// <summary>
         /// Gets whether this class has a root class ancestor.
         /// </summary>
         public bool HasRootClass
