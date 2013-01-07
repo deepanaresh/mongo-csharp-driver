@@ -1,17 +1,27 @@
-﻿
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using MongoDB.Driver.Internal;
+
 namespace MongoDB.Driver.Communication.Security
 {
     /// <summary>
-    /// A mechanism used to converse with the server.
+    /// Represents a sasl mechanism.
     /// </summary>
     internal interface ISaslMechanism
     {
         /// <summary>
-        /// Transitions to the next step in the conversation.
+        /// Gets the name of the mechanism.
         /// </summary>
-        /// <param name="conversation">The conversation.</param>
-        /// <param name="input">The input.</param>
-        /// <returns>An ISaslStep.</returns>
-        ISaslStep Transition(SaslConversation conversation, byte[] input);
+        string Name { get; }
+
+        /// <summary>
+        /// Initializes the mechanism.
+        /// </summary>
+        /// <param name="connection">The connection.</param>
+        /// <param name="identity">The identity.</param>
+        /// <returns>The initial step.</returns>
+        ISaslStep Initialize(MongoConnection connection, MongoClientIdentity identity);
     }
 }

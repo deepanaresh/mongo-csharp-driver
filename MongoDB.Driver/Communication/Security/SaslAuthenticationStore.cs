@@ -9,8 +9,8 @@ namespace MongoDB.Driver.Communication.Security
 {
     internal class SaslAuthenticationStore : IAuthenticationStore
     {
-        private static readonly GssapiMechanismFactory _gssapiMechanismFactory;
-        private static readonly List<ISaslMechanismFactory> __negotiatedMechanismFactories;
+        private static readonly GssapiMechanism _gssapiMechanism;
+        private static readonly List<ISaslMechanism> __negotiatedMechanisms;
 
         private readonly MongoConnection _connection;
         private readonly MongoClientIdentity _identity;
@@ -18,9 +18,10 @@ namespace MongoDB.Driver.Communication.Security
 
         static SaslAuthenticationStore()
         {
-            __negotiatedMechanismFactories = new List<ISaslMechanismFactory>
+            _gssapiMechanism = new GssapiMechanism();
+            __negotiatedMechanisms = new List<ISaslMechanism>
             {
-                new CramMD5MechanismFactory()
+                new CramMD5Mechanism()
             };
         }
 
@@ -61,15 +62,14 @@ namespace MongoDB.Driver.Communication.Security
         {
             using (var conversation = new SaslConversation())
             {
-                var mechanismFactory = GetMechanismFactory(_connection, _identity);
-                var mechanism = mechanismFactory.Create(_connection, _identity);
-                var currentStep = conversation.Initiate(mechanism);
+                var mechanism = GetMechanism(_connection, _identity);
+                var currentStep = mechanism.Initialize(_connection, _identity);
 
                 var command = new CommandDocument
                 {
                     { "saslStart", 1 },
-                    { "mechanism", mechanismFactory.Name },
-                    { "payload", currentStep.Output }
+                    { "mechanism", mechanism.Name },
+                    { "payload", currentStep.BytesToSendToServer }
                 };
 
                 while (true)
@@ -91,13 +91,13 @@ namespace MongoDB.Driver.Communication.Security
                     {
                         { "saslContinue", 1 },
                         { "conversationId", result.Response["conversationId"].AsInt32 },
-                        { "payload", currentStep.Output }
+                        { "payload", currentStep.BytesToSendToServer }
                     };
                 }
             }
         }
 
-        private ISaslMechanismFactory GetMechanismFactory(MongoConnection connection, MongoClientIdentity identity)
+        private ISaslMechanism GetMechanism(MongoConnection connection, MongoClientIdentity identity)
         {
             // TODO: provide an override to force the use of gsasl.
             bool useGsasl = !Environment.OSVersion.Platform.ToString().Contains("Win");
@@ -105,7 +105,7 @@ namespace MongoDB.Driver.Communication.Security
             switch (identity.AuthenticationType)
             {
                 case MongoAuthenticationType.Gssapi:
-                    return _gssapiMechanismFactory;
+                    return _gssapiMechanism;
                 case MongoAuthenticationType.Negotiate:
                     return Negotiate(connection);
             }
@@ -118,7 +118,7 @@ namespace MongoDB.Driver.Communication.Security
             throw new MongoException(string.Format("Error: {0} - {1}", code, result.Response["errmsg"].AsString));
         }
 
-        private ISaslMechanismFactory Negotiate(MongoConnection connection)
+        private ISaslMechanism Negotiate(MongoConnection connection)
         {
             var command = new CommandDocument
             {
@@ -131,7 +131,7 @@ namespace MongoDB.Driver.Communication.Security
             if (result.Response.Contains("supportedMechanisms"))
             {
                 var supportedMechanisms = result.Response["supportedMechanisms"].AsBsonArray.ToLookup(x => x.AsString);
-                foreach (var factory in __negotiatedMechanismFactories)
+                foreach (var factory in __negotiatedMechanisms)
                 {
                     if (supportedMechanisms.Contains(factory.Name))
                     {
@@ -141,13 +141,6 @@ namespace MongoDB.Driver.Communication.Security
             }
 
             throw new MongoSecurityException("Unable to negotiate a security protocol with the server.");
-        }
-
-        // nested class
-        private class NegotiatedMechanism
-        {
-            public string Name;
-            public Func<MongoClientIdentity, ISaslMechanism> Creator;
         }
     }
 }

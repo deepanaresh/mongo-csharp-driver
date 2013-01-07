@@ -42,16 +42,6 @@ namespace MongoDB.Driver.Communication.Security
         }
 
         /// <summary>
-        /// Initiates the specified mechanism.
-        /// </summary>
-        /// <param name="mechanism">The mechanism.</param>
-        /// <returns>An ISaslStep.</returns>
-        public ISaslStep Initiate(ISaslMechanism mechanism)
-        {
-            return new SaslInitiationStep(mechanism);
-        }
-
-        /// <summary>
         /// Registers a managed resource for disposal.
         /// </summary>
         /// <param name="disposable">The disposable.</param>

@@ -3,9 +3,9 @@
 namespace MongoDB.Driver.Communication.Security.Mechanisms
 {
     /// <summary>
-    /// A mechanism implementing the GssApi specification.
+    /// Implements the GssApi specification using the Gsasl library.
     /// </summary>
-    internal class GsaslGssapiMechanism : AbstractGsaslMechanism
+    internal class GsaslGssapiStep : AbstractGsaslStep
     {
         // private fields
         private readonly string _authorizationId;
@@ -14,12 +14,12 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
 
         // constructors
         /// <summary>
-        /// Initializes a new instance of the <see cref="GsaslGssapiMechanism" /> class.
+        /// Initializes a new instance of the <see cref="GsaslGssapiStep" /> class.
         /// </summary>
         /// <param name="serverName">Name of the server.</param>
         /// <param name="identity">The identity.</param>
-        public GsaslGssapiMechanism(string serverName, MongoClientIdentity identity)
-            : base("GSSAPI")
+        public GsaslGssapiStep(string serverName, MongoClientIdentity identity)
+            : base("GSSAPI", new byte[0])
         {
             _authorizationId = identity.Username;
             _servicePrincipalName = "mongodb/" + serverName;

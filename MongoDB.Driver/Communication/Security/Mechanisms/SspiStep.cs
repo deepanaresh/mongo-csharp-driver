@@ -5,9 +5,9 @@ using MongoDB.Driver.Communication.Security.Mechanisms.Sspi;
 namespace MongoDB.Driver.Communication.Security.Mechanisms
 {
     /// <summary>
-    /// A mechanism implementing the GSS API specification on Windows utilizing the native sspi libraries.
+    /// Implements the GSS API specification on Windows utilizing the native sspi libraries.
     /// </summary>
-    internal class SspiMechanism : ISaslMechanism
+    internal class SspiStep : ISaslStep
     {
         // private fields
         private readonly string _authorizationId;
@@ -16,11 +16,11 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
 
         // constructors
         /// <summary>
-        /// Initializes a new instance of the <see cref="SspiMechanism" /> class.
+        /// Initializes a new instance of the <see cref="SspiStep" /> class.
         /// </summary>
         /// <param name="serverName">Name of the server.</param>
         /// <param name="identity">The identity.</param>
-        public SspiMechanism(string serverName, MongoClientIdentity identity)
+        public SspiStep(string serverName, MongoClientIdentity identity)
         {
             _authorizationId = identity.Username;
             _servicePrincipalName = "mongodb/" + serverName;
@@ -29,11 +29,11 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
 
         // properties
         /// <summary>
-        /// Gets the name of the mechanism.
+        /// The bytes that should be sent to ther server before calling Transition.
         /// </summary>
-        public string Name
+        public byte[] BytesToSendToServer
         {
-            get { return "GSSAPI"; }
+            get { return new byte[0]; }
         }
 
         // public methods
@@ -41,9 +41,9 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
         /// Transitions to the next step in the conversation.
         /// </summary>
         /// <param name="conversation">The conversation.</param>
-        /// <param name="input">The input.</param>
+        /// <param name="bytesReceivedFromServer">The bytes received from the server.</param>
         /// <returns>An ISaslStep.</returns>
-        public ISaslStep Transition(SaslConversation conversation, byte[] input)
+        public ISaslStep Transition(SaslConversation conversation, byte[] bytesReceivedFromServer)
         {
             SecurityCredentials securityCredentials;
             try
@@ -56,11 +56,11 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
                 throw new MongoSecurityException("Unable to acquire security credentials.", ex);
             }
 
-            byte[] output;
+            byte[] bytesToSendToServer;
             SecurityContext context;
             try
             {
-                context = SecurityContext.Initialize(securityCredentials, _servicePrincipalName, input, out output);
+                context = SecurityContext.Initialize(securityCredentials, _servicePrincipalName, bytesReceivedFromServer, out bytesToSendToServer);
             }
             catch (Win32Exception ex)
             {
@@ -76,10 +76,10 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
 
             if (!context.IsInitialized)
             {
-                return new SspiInitializeStep(_servicePrincipalName, _authorizationId, context, output);
+                return new SspiInitializeStep(_servicePrincipalName, _authorizationId, context, bytesToSendToServer);
             }
 
-            return new SspiNegotiateStep(_authorizationId, context, output);
+            return new SspiNegotiateStep(_authorizationId, context, bytesToSendToServer);
         }
 
         // nested classes
@@ -87,28 +87,28 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
         {
             private readonly string _authorizationId;
             private readonly SecurityContext _context;
-            private readonly byte[] _output;
+            private readonly byte[] _bytesReceivedFromServer;
             private readonly string _servicePrincipalName;
 
-            public SspiInitializeStep(string servicePrincipalName, string authorizationId, SecurityContext context, byte[] output)
+            public SspiInitializeStep(string servicePrincipalName, string authorizationId, SecurityContext context, byte[] bytesToSendToServer)
             {
                 _servicePrincipalName = servicePrincipalName;
                 _authorizationId = authorizationId;
                 _context = context;
-                _output = output ?? new byte[0];
+                _bytesReceivedFromServer = bytesToSendToServer ?? new byte[0];
             }
 
-            public byte[] Output
+            public byte[] BytesToSendToServer
             {
-                get { return _output; }
+                get { return _bytesReceivedFromServer; }
             }
 
-            public ISaslStep Transition(SaslConversation conversation, byte[] input)
+            public ISaslStep Transition(SaslConversation conversation, byte[] bytesReceivedFromServer)
             {
-                byte[] output;
+                byte[] bytesToSendToServer;
                 try
                 {
-                    _context.Initialize(_servicePrincipalName, input, out output);
+                    _context.Initialize(_servicePrincipalName, bytesReceivedFromServer, out bytesToSendToServer);
                 }
                 catch (Win32Exception ex)
                 {
@@ -117,10 +117,10 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
 
                 if (!_context.IsInitialized)
                 {
-                    return new SspiInitializeStep(_servicePrincipalName, _authorizationId, _context, output);
+                    return new SspiInitializeStep(_servicePrincipalName, _authorizationId, _context, bytesToSendToServer);
                 }
 
-                return new SspiNegotiateStep(_authorizationId, _context, output);
+                return new SspiNegotiateStep(_authorizationId, _context, bytesToSendToServer);
             }
         }
 
@@ -128,23 +128,23 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
         {
             private readonly string _authorizationId;
             private readonly SecurityContext _context;
-            private readonly byte[] _output;
+            private readonly byte[] _bytesToSendToServer;
 
-            public SspiNegotiateStep(string authorizationId, SecurityContext context, byte[] output)
+            public SspiNegotiateStep(string authorizationId, SecurityContext context, byte[] bytesToSendToServer)
             {
                 _authorizationId = authorizationId;
                 _context = context;
-                _output = output ?? new byte[0];
+                _bytesToSendToServer = bytesToSendToServer ?? new byte[0];
             }
 
-            public byte[] Output
+            public byte[] BytesToSendToServer
             {
-                get { return _output; }
+                get { return _bytesToSendToServer; }
             }
 
-            public ISaslStep Transition(SaslConversation conversation, byte[] input)
+            public ISaslStep Transition(SaslConversation conversation, byte[] bytesReceivedFromServer)
             {
-                if (input == null || input.Length != 32) //RFC specifies this must be 4 octets
+                if (bytesReceivedFromServer == null || bytesReceivedFromServer.Length != 32) //RFC specifies this must be 4 octets
                 {
                     throw new MongoSecurityException("Invalid server response.");
                 }
@@ -152,7 +152,7 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
                 byte[] decryptedBytes;
                 try
                 {
-                    _context.DecryptMessage(0, input, out decryptedBytes);
+                    _context.DecryptMessage(0, bytesReceivedFromServer, out decryptedBytes);
                 }
                 catch (Win32Exception ex)
                 {
@@ -165,29 +165,29 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
                     length += _authorizationId.Length;
                 }
 
-                input = new byte[length];
-                input[0] = 0x1; // NO_PROTECTION
-                input[1] = 0x0; // NO_PROTECTION
-                input[2] = 0x0; // NO_PROTECTION
-                input[3] = 0x0; // NO_PROTECTION
+                bytesReceivedFromServer = new byte[length];
+                bytesReceivedFromServer[0] = 0x1; // NO_PROTECTION
+                bytesReceivedFromServer[1] = 0x0; // NO_PROTECTION
+                bytesReceivedFromServer[2] = 0x0; // NO_PROTECTION
+                bytesReceivedFromServer[3] = 0x0; // NO_PROTECTION
 
                 if (_authorizationId != null)
                 {
                     var authorizationIdBytes = Encoding.UTF8.GetBytes(_authorizationId);
-                    authorizationIdBytes.CopyTo(input, 4);
+                    authorizationIdBytes.CopyTo(bytesReceivedFromServer, 4);
                 }
 
-                byte[] output;
+                byte[] bytesToSendToServer;
                 try
                 {
-                    _context.EncryptMessage(input, out output);
+                    _context.EncryptMessage(bytesReceivedFromServer, out bytesToSendToServer);
                 }
                 catch(Win32Exception ex)
                 {
                     throw new MongoSecurityException("Unabled to encrypt message.", ex);
                 }
 
-                return new SaslCompletionStep(output);
+                return new SaslCompletionStep(bytesToSendToServer);
             }
         }
     }

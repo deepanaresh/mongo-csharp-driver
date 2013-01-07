@@ -6,19 +6,31 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
     /// <summary>
     /// A base class for implementing a mechanism using Libgsasl.
     /// </summary>
-    internal abstract class AbstractGsaslMechanism : ISaslMechanism
+    internal abstract class AbstractGsaslStep : ISaslStep
     {
         // private fields
         private readonly string _name;
+        private readonly byte[] _output;
 
         // constructors
         /// <summary>
-        /// Initializes a new instance of the <see cref="AbstractGsaslMechanism" /> class.
+        /// Initializes a new instance of the <see cref="AbstractGsaslStep" /> class.
         /// </summary>
         /// <param name="name">The name.</param>
-        protected AbstractGsaslMechanism(string name)
+        /// <param name="output">The output.</param>
+        protected AbstractGsaslStep(string name, byte[] output)
         {
-            _name = name;    
+            _name = name;
+            _output = output;
+        }
+
+        // public properties
+        /// <summary>
+        /// The bytes that should be sent to ther server before calling Transition.
+        /// </summary>
+        public byte[] BytesToSendToServer
+        {
+            get { return _output; }
         }
 
         // public methods
@@ -58,7 +70,7 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
                 session.SetProperty(property.Key, property.Value);
             }
 
-            return new LibgsaslAuthenticateStep(session, null)
+            return new GsaslAuthenticateStep(session, null)
                 .Transition(conversation, input);
         }
 
@@ -70,33 +82,37 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
         protected abstract IEnumerable<KeyValuePair<string, string>> GetProperties();
 
         // nested classes
-        private class LibgsaslAuthenticateStep : ISaslStep
+        private class GsaslAuthenticateStep : ISaslStep
         {
-            private readonly byte[] _output;
+            // private fields
+            private readonly byte[] _bytesToSendToServer;
             private GsaslSession _session;
 
-            public LibgsaslAuthenticateStep(GsaslSession session, byte[] output)
+            // constructors
+            public GsaslAuthenticateStep(GsaslSession session, byte[] bytesToSendToServer)
             {
                 _session = session;
-                _output = output;
+                _bytesToSendToServer = bytesToSendToServer;
             }
 
-            public byte[] Output
+            // public properties
+            public byte[] BytesToSendToServer
             {
-                get { return _output; }
+                get { return _bytesToSendToServer; }
             }
 
-            public ISaslStep Transition(SaslConversation conversation, byte[] input)
+            // public methods
+            public ISaslStep Transition(SaslConversation conversation, byte[] bytesReceivedFromServer)
             {
                 try
                 {
-                    var output = _session.Step(input);
+                    var bytesToSendToServer = _session.Step(bytesReceivedFromServer);
                     if (_session.IsComplete)
                     {
-                        return new SaslCompletionStep(output);
+                        return new SaslCompletionStep(bytesToSendToServer);
                     }
 
-                    return new LibgsaslAuthenticateStep(_session, output);
+                    return new GsaslAuthenticateStep(_session, bytesToSendToServer);
                 }
                 catch (GsaslException ex)
                 {

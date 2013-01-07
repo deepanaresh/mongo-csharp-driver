@@ -1,19 +1,22 @@
 ﻿
 namespace MongoDB.Driver.Communication.Security
 {
+    /// <summary>
+    /// A step in a Sasl Conversation.
+    /// </summary>
     internal interface ISaslStep
     {
         /// <summary>
-        /// Gets the output from the transition. The output will be used to send back to the server.
+        /// The bytes that should be sent to ther server before calling Transition.
         /// </summary>
-        byte[] Output { get; }
+        byte[] BytesToSendToServer { get; }
 
         /// <summary>
         /// Transitions to the next step in the conversation.
         /// </summary>
         /// <param name="conversation">The conversation.</param>
-        /// <param name="input">The input.</param>
+        /// <param name="bytesReceivedFromServer">The bytes received from the server.</param>
         /// <returns>An ISaslStep.</returns>
-        ISaslStep Transition(SaslConversation conversation, byte[] input);
+        ISaslStep Transition(SaslConversation conversation, byte[] bytesReceivedFromServer);
     }
 }

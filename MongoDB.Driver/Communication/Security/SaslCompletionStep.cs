@@ -25,7 +25,7 @@ namespace MongoDB.Driver.Communication.Security
         /// <summary>
         /// Gets the output from the transition. The output will be used to send back to the server.
         /// </summary>
-        public byte[] Output
+        public byte[] BytesToSendToServer
         {
             get { return _output; }
         }
