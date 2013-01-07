@@ -128,9 +128,9 @@ namespace MongoDB.Bson.Serialization
                 Dictionary<string, object> values = null;
                 object obj = null;
                 ISupportInitialize supportsInitialization = null;
-                if (_classMap.IsImmutable)
+                if (_classMap.ConstructorMaps.Count() > 0)
                 {
-                    // for immutable classes we first gather the values in a dictionary and then call a matching constructor
+                    // for constructor-based deserialization we first gather the values in a dictionary and then call a matching constructor
                     values = new Dictionary<string, object>();
                 }
                 else

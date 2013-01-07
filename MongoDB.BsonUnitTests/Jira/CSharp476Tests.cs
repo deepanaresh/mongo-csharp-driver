@@ -23,7 +23,6 @@ namespace MongoDB.BsonUnitTests.Jira
     [TestFixture]
     public class CSharp476Tests
     {
-        // [BsonImmutable]
         public class C
         {
             private int _x;
@@ -46,7 +45,6 @@ namespace MongoDB.BsonUnitTests.Jira
         {
             BsonClassMap.RegisterClassMap<C>(cm =>
             {
-                cm.SetIsImmutable(true);
                 cm.MapMember(c => c.X);
                 cm.MapMember(c => c.Y);
                 cm.MapMember(c => c.Z);

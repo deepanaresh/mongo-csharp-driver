@@ -50,7 +50,6 @@ namespace MongoDB.Bson.Serialization
         private bool _hasRootClass;
         private bool _isRootClass;
         private bool _isAnonymous;
-        private bool _isImmutable;
         private BsonMemberMap _idMemberMap;
         private readonly List<BsonMemberMap> _allMemberMaps; // includes inherited member maps
         private readonly ReadOnlyCollection<BsonMemberMap> _allMemberMapsReadonly;
@@ -218,14 +217,6 @@ namespace MongoDB.Bson.Serialization
         public bool IsFrozen
         {
             get { return _frozen; }
-        }
-
-        /// <summary>
-        /// Gets whether the class is immutable.
-        /// </summary>
-        public bool IsImmutable
-        {
-            get { return _isImmutable; }
         }
 
         /// <summary>
@@ -975,16 +966,6 @@ namespace MongoDB.Bson.Serialization
         {
             if (_frozen) { ThrowFrozenException(); }
             _ignoreExtraElementsIsInherited = ignoreExtraElementsIsInherited;
-        }
-
-        /// <summary>
-        /// Sets whether this class is an immutable class.
-        /// </summary>
-        /// <param name="isImmutable">Whether this class is an immutable class.</param>
-        public void SetIsImmutable(bool isImmutable)
-        {
-            if (_frozen) { ThrowFrozenException(); }
-            _isImmutable = isImmutable;
         }
 
         /// <summary>
