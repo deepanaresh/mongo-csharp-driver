@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using MongoDB.Driver.Internal;
 using MongoDB.Driver.Security;
 using MongoDB.Driver.Security.Mechanisms;
@@ -7,9 +9,19 @@ namespace MongoDB.Driver.Communication.Security
 {
     internal class SaslAuthenticationStore : IAuthenticationStore
     {
+        private static readonly List<NegotiatedMechanism> __negotiatedMechanisms;
+
         private readonly MongoConnection _connection;
         private readonly MongoClientIdentity _identity;
         private bool _isAuthenticated;
+
+        static SaslAuthenticationStore()
+        {
+            __negotiatedMechanisms = new List<NegotiatedMechanism>
+            {
+                new NegotiatedMechanism { Name = "CRAM-MD5", Creator = i => new CramMD5Mechanism(i) }
+            };
+        }
 
         public SaslAuthenticationStore(MongoConnection connection, MongoClientIdentity identity)
         {
@@ -120,19 +132,31 @@ namespace MongoDB.Driver.Communication.Security
             var command = new CommandDocument
             {
                 { "saslStart", 1 },
+                { "mechanism", ""}, // forces a response that contains a list of supported mechanisms...
                 { "payload", new byte[0] }
             };
 
             var result = _connection.RunCommand(_identity.Source, QueryFlags.SlaveOk, command, true);
-            var code = result.Response["code"].AsInt32;
-            if (code != 0)
+            if (result.Response.Contains("supportedMechanisms"))
             {
-                HandleError(result, code);
+                var supportedMechanisms = result.Response["supportedMechanisms"].AsBsonArray.ToLookup(x => x.AsString);
+                foreach (var negotiatedMechanism in __negotiatedMechanisms)
+                {
+                    if (supportedMechanisms.Contains(negotiatedMechanism.Name))
+                    {
+                        return negotiatedMechanism.Creator(identity);
+                    }
+                }
             }
 
-            // read mechanisms...
+            throw new MongoSecurityException("Unable to negotiate a security protocol with the server.");
+        }
 
-            return new CramMD5Mechanism(identity);
+        // nested class
+        private class NegotiatedMechanism
+        {
+            public string Name;
+            public Func<MongoClientIdentity, ISaslMechanism> Creator;
         }
     }
 }
