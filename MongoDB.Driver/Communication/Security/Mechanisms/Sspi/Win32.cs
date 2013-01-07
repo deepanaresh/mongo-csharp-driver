@@ -2,7 +2,7 @@
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 
-namespace MongoDB.Driver.Security.Mechanisms.Sspi
+namespace MongoDB.Driver.Communication.Security.Mechanisms.Sspi
 {
     internal static class Win32
     {

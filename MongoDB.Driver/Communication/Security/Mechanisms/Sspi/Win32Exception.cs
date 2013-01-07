@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace MongoDB.Driver.Security.Mechanisms.Sspi
+namespace MongoDB.Driver.Communication.Security.Mechanisms.Sspi
 {
     /// <summary>
     /// Thrown from a win32 wrapped operation.

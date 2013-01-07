@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace MongoDB.Driver.Security.Mechanisms
+namespace MongoDB.Driver.Communication.Security.Mechanisms
 {
     /// <summary>
     /// A mechanism implementing the GssApi specification.

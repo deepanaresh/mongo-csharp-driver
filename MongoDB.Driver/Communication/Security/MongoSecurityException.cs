@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace MongoDB.Driver.Security
+namespace MongoDB.Driver.Communication.Security
 {
     /// <summary>
     /// An exception thrown during login and privilege negotiation.

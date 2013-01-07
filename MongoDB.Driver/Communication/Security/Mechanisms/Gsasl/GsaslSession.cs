@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace MongoDB.Driver.Security.Mechanisms.Gsasl
+namespace MongoDB.Driver.Communication.Security.Mechanisms.Gsasl
 {
     /// <summary>
     /// A handle to a gsasl session.

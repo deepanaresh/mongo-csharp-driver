@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace MongoDB.Driver.Security.Mechanisms.Sspi
+namespace MongoDB.Driver.Communication.Security.Mechanisms.Sspi
 {
     /// <summary>
     /// A SecBuffer structure.

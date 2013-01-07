@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Text;
-using MongoDB.Driver.Security.Mechanisms.Sspi;
+using MongoDB.Driver.Communication.Security.Mechanisms.Sspi;
 
-namespace MongoDB.Driver.Security.Mechanisms
+namespace MongoDB.Driver.Communication.Security.Mechanisms
 {
     /// <summary>
     /// A mechanism implementing the GSS API specification on Windows utilizing the native sspi libraries.

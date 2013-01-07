@@ -1,5 +1,5 @@
 ﻿
-namespace MongoDB.Driver.Security
+namespace MongoDB.Driver.Communication.Security
 {
     internal interface ISaslStep
     {

@@ -1,5 +1,5 @@
 ﻿
-namespace MongoDB.Driver.Security
+namespace MongoDB.Driver.Communication.Security
 {
     /// <summary>
     /// A step initiating the sasl conversation.

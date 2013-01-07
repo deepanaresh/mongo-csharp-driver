@@ -107,6 +107,7 @@
     <Compile Include="CommandResults\SafeModeResult.cs" />
     <Compile Include="CommandResults\ValidateCollectionResult.cs" />
     <Compile Include="Communication\MongoServerInstanceType.cs" />
+    <Compile Include="Communication\Security\Mechanisms\CramMD5MechanismFactory.cs" />
     <Compile Include="Communication\Security\Mechanisms\Gsasl\Gsasl.cs" />
     <Compile Include="Communication\Security\Mechanisms\Gsasl\GsaslContext.cs" />
     <Compile Include="Communication\Security\Mechanisms\Gsasl\GsaslException.cs" />
@@ -120,6 +121,8 @@
     <Compile Include="Communication\Security\Mechanisms\CramMD5Mechanism.cs" />
     <Compile Include="Communication\Security\Mechanisms\GsaslCramMD5Mechanism.cs" />
     <Compile Include="Communication\Security\Mechanisms\GsaslGssapiMechanism.cs" />
+    <Compile Include="Communication\Security\Mechanisms\GssapiMechanismFactory.cs" />
+    <Compile Include="Communication\Security\ISaslMechanismFactory.cs" />
     <Compile Include="Communication\Security\Mechanisms\SspiMechanism.cs" />
     <Compile Include="Communication\Security\MongoSecurityException.cs" />
     <Compile Include="Communication\Security\SaslAuthenticationStore.cs" />

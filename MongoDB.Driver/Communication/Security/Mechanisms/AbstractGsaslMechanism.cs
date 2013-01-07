@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
-using MongoDB.Driver.Security.Mechanisms.Gsasl;
+using MongoDB.Driver.Communication.Security.Mechanisms.Gsasl;
 
-namespace MongoDB.Driver.Security.Mechanisms
+namespace MongoDB.Driver.Communication.Security.Mechanisms
 {
     /// <summary>
     /// A base class for implementing a mechanism using Libgsasl.
@@ -18,16 +18,7 @@ namespace MongoDB.Driver.Security.Mechanisms
         /// <param name="name">The name.</param>
         protected AbstractGsaslMechanism(string name)
         {
-            _name = name;
-        }
-
-        // public properties
-        /// <summary>
-        /// Gets the name of the mechanism.
-        /// </summary>
-        public string Name
-        {
-            get { return _name; }
+            _name = name;    
         }
 
         // public methods
@@ -54,7 +45,7 @@ namespace MongoDB.Driver.Security.Mechanisms
             GsaslSession session;
             try
             {
-                session = context.BeginSession(Name);
+                session = context.BeginSession(_name);
                 conversation.RegisterUnmanagedResourceForDisposal(session);
             }
             catch (GsaslException ex)

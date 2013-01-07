@@ -2,7 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace MongoDB.Driver.Security.Mechanisms
+namespace MongoDB.Driver.Communication.Security.Mechanisms
 {
     /// <summary>
     /// A mechanism implementing the CRAM-MD5 sasl specification.

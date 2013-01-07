@@ -3,7 +3,7 @@ using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Security;
 
-namespace MongoDB.Driver.Security.Mechanisms.Gsasl
+namespace MongoDB.Driver.Communication.Security.Mechanisms.Gsasl
 {
 	internal static class Gsasl
 	{

@@ -1,5 +1,5 @@
 ﻿
-namespace MongoDB.Driver.Security.Mechanisms.Sspi
+namespace MongoDB.Driver.Communication.Security.Mechanisms.Sspi
 {
     /// <summary>
     /// Flags for QueryContextAttributes.

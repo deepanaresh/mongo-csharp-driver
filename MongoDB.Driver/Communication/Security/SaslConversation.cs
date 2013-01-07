@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace MongoDB.Driver.Security
+namespace MongoDB.Driver.Communication.Security
 {
     /// <summary>
     /// A high-level sasl conversation object.

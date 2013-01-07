@@ -1,5 +1,5 @@
 ﻿
-namespace MongoDB.Driver.Security.Mechanisms.Gsasl
+namespace MongoDB.Driver.Communication.Security.Mechanisms.Gsasl
 {
     /// <summary>
     /// Valid properties used in a GsaslSession.

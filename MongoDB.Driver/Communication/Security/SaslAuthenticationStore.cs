@@ -2,14 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using MongoDB.Driver.Internal;
-using MongoDB.Driver.Security;
-using MongoDB.Driver.Security.Mechanisms;
+using MongoDB.Driver.Communication.Security;
+using MongoDB.Driver.Communication.Security.Mechanisms;
 
 namespace MongoDB.Driver.Communication.Security
 {
     internal class SaslAuthenticationStore : IAuthenticationStore
     {
-        private static readonly List<NegotiatedMechanism> __negotiatedMechanisms;
+        private static readonly GssapiMechanismFactory _gssapiMechanismFactory;
+        private static readonly List<ISaslMechanismFactory> __negotiatedMechanismFactories;
 
         private readonly MongoConnection _connection;
         private readonly MongoClientIdentity _identity;
@@ -17,9 +18,9 @@ namespace MongoDB.Driver.Communication.Security
 
         static SaslAuthenticationStore()
         {
-            __negotiatedMechanisms = new List<NegotiatedMechanism>
+            __negotiatedMechanismFactories = new List<ISaslMechanismFactory>
             {
-                new NegotiatedMechanism { Name = "CRAM-MD5", Creator = i => new CramMD5Mechanism(i) }
+                new CramMD5MechanismFactory()
             };
         }
 
@@ -60,13 +61,14 @@ namespace MongoDB.Driver.Communication.Security
         {
             using (var conversation = new SaslConversation())
             {
-                var mechanism = GetMechanism(_connection, _identity);
+                var mechanismFactory = GetMechanismFactory(_connection, _identity);
+                var mechanism = mechanismFactory.Create(_connection, _identity);
                 var currentStep = conversation.Initiate(mechanism);
 
                 var command = new CommandDocument
                 {
                     { "saslStart", 1 },
-                    { "mechanism", mechanism.Name },
+                    { "mechanism", mechanismFactory.Name },
                     { "payload", currentStep.Output }
                 };
 
@@ -95,7 +97,7 @@ namespace MongoDB.Driver.Communication.Security
             }
         }
 
-        private ISaslMechanism GetMechanism(MongoConnection connection, MongoClientIdentity identity)
+        private ISaslMechanismFactory GetMechanismFactory(MongoConnection connection, MongoClientIdentity identity)
         {
             // TODO: provide an override to force the use of gsasl.
             bool useGsasl = !Environment.OSVersion.Platform.ToString().Contains("Win");
@@ -103,20 +105,9 @@ namespace MongoDB.Driver.Communication.Security
             switch (identity.AuthenticationType)
             {
                 case MongoAuthenticationType.Gssapi:
-                    if (useGsasl)
-                    {
-                        return new GsaslGssapiMechanism(
-                            connection.ServerInstance.Address.Host,
-                            identity);
-                    }
-                    else
-                    {
-                        return new SspiMechanism(
-                            connection.ServerInstance.Address.Host,
-                            identity);
-                    }
+                    return _gssapiMechanismFactory;
                 case MongoAuthenticationType.Negotiate:
-                    return Negotiate(connection, identity);
+                    return Negotiate(connection);
             }
 
             throw new NotSupportedException(string.Format("Unsupported credentials type {0}.", identity.AuthenticationType));
@@ -127,7 +118,7 @@ namespace MongoDB.Driver.Communication.Security
             throw new MongoException(string.Format("Error: {0} - {1}", code, result.Response["errmsg"].AsString));
         }
 
-        private ISaslMechanism Negotiate(MongoConnection connection, MongoClientIdentity identity)
+        private ISaslMechanismFactory Negotiate(MongoConnection connection)
         {
             var command = new CommandDocument
             {
@@ -140,11 +131,11 @@ namespace MongoDB.Driver.Communication.Security
             if (result.Response.Contains("supportedMechanisms"))
             {
                 var supportedMechanisms = result.Response["supportedMechanisms"].AsBsonArray.ToLookup(x => x.AsString);
-                foreach (var negotiatedMechanism in __negotiatedMechanisms)
+                foreach (var factory in __negotiatedMechanismFactories)
                 {
-                    if (supportedMechanisms.Contains(negotiatedMechanism.Name))
+                    if (supportedMechanisms.Contains(factory.Name))
                     {
-                        return negotiatedMechanism.Creator(identity);
+                        return factory;
                     }
                 }
             }

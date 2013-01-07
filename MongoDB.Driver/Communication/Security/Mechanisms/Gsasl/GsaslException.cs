@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace MongoDB.Driver.Security.Mechanisms.Gsasl
+namespace MongoDB.Driver.Communication.Security.Mechanisms.Gsasl
 {
     /// <summary>
     /// Thrown from a gsasl wrapped operation.

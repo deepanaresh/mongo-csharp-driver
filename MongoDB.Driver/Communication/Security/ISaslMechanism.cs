@@ -1,16 +1,11 @@
 ﻿
-namespace MongoDB.Driver.Security
+namespace MongoDB.Driver.Communication.Security
 {
     /// <summary>
     /// A mechanism used to converse with the server.
     /// </summary>
     internal interface ISaslMechanism
     {
-        /// <summary>
-        /// Gets the name of the mechanism.
-        /// </summary>
-        string Name { get; }
-
         /// <summary>
         /// Transitions to the next step in the conversation.
         /// </summary>
