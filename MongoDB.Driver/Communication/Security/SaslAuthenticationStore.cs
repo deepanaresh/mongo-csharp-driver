@@ -21,7 +21,8 @@ namespace MongoDB.Driver.Communication.Security
             _gssapiMechanism = new GssapiMechanism();
             __negotiatedMechanisms = new List<ISaslMechanism>
             {
-                new CramMD5Mechanism()
+                new CramMD5Mechanism(),
+                new DigestMD5Mechanism()
             };
         }
 
@@ -99,9 +100,6 @@ namespace MongoDB.Driver.Communication.Security
 
         private ISaslMechanism GetMechanism(MongoConnection connection, MongoClientIdentity identity)
         {
-            // TODO: provide an override to force the use of gsasl.
-            bool useGsasl = !Environment.OSVersion.Platform.ToString().Contains("Win");
-
             switch (identity.AuthenticationType)
             {
                 case MongoAuthenticationType.Gssapi:

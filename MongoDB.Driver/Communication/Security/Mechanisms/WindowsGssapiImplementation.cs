@@ -7,7 +7,7 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
     /// <summary>
     /// Implements the GSS API specification on Windows utilizing the native sspi libraries.
     /// </summary>
-    internal class SspiStep : ISaslStep
+    internal class WindowsGssapiImplementation : ISaslStep
     {
         // private fields
         private readonly string _authorizationId;
@@ -16,11 +16,11 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
 
         // constructors
         /// <summary>
-        /// Initializes a new instance of the <see cref="SspiStep" /> class.
+        /// Initializes a new instance of the <see cref="WindowsGssapiImplementation" /> class.
         /// </summary>
         /// <param name="serverName">Name of the server.</param>
         /// <param name="identity">The identity.</param>
-        public SspiStep(string serverName, MongoClientIdentity identity)
+        public WindowsGssapiImplementation(string serverName, MongoClientIdentity identity)
         {
             _authorizationId = identity.Username;
             _servicePrincipalName = "mongodb/" + serverName;
@@ -182,7 +182,7 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
                 {
                     _context.EncryptMessage(bytesReceivedFromServer, out bytesToSendToServer);
                 }
-                catch(Win32Exception ex)
+                catch (Win32Exception ex)
                 {
                     throw new MongoSecurityException("Unabled to encrypt message.", ex);
                 }

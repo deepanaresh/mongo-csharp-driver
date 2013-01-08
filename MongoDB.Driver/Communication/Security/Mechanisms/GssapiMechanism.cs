@@ -33,12 +33,12 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
             bool useGsasl = !Environment.OSVersion.Platform.ToString().Contains("Win");
             if (useGsasl)
             {
-                return new GsaslGssapiStep(
+                return new GsaslGssapiImplementation(
                     connection.ServerInstance.Address.Host,
                     identity);
             }
 
-            return new SspiStep(
+            return new WindowsGssapiImplementation(
                 connection.ServerInstance.Address.Host,
                 identity);
         }

@@ -6,7 +6,7 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
     /// <summary>
     /// A base class for implementing a mechanism using Libgsasl.
     /// </summary>
-    internal abstract class AbstractGsaslStep : ISaslStep
+    internal abstract class AbstractGsaslImplementation : AbstractImplementation, ISaslStep
     {
         // private fields
         private readonly string _name;
@@ -14,11 +14,11 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
 
         // constructors
         /// <summary>
-        /// Initializes a new instance of the <see cref="AbstractGsaslStep" /> class.
+        /// Initializes a new instance of the <see cref="AbstractGsaslImplementation" /> class.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="output">The output.</param>
-        protected AbstractGsaslStep(string name, byte[] output)
+        protected AbstractGsaslImplementation(string name, byte[] output)
         {
             _name = name;
             _output = output;
@@ -99,6 +99,11 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
             public byte[] BytesToSendToServer
             {
                 get { return _bytesToSendToServer; }
+            }
+
+            public bool IsComplete
+            {
+                get { return false; }
             }
 
             // public methods

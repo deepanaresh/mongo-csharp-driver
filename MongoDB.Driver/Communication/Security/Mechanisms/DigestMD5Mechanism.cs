@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using MongoDB.Driver.Internal;
 
 namespace MongoDB.Driver.Communication.Security.Mechanisms
 {
     /// <summary>
-    /// A mechanism for CRAM-MD5.
+    /// A mechanism for DIGEST-MD5.
     /// </summary>
-    internal class CramMD5Mechanism : ISaslMechanism
+    internal class DigestMD5Mechanism : ISaslMechanism
     {
         // public properties
         /// <summary>
@@ -18,7 +18,7 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
         /// </summary>
         public string Name
         {
-            get { return "CRAM-MD5"; }
+            get { return "DIGEST-MD5"; }
         }
 
         // public methods
@@ -28,10 +28,9 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
         /// <param name="connection">The connection.</param>
         /// <param name="identity">The identity.</param>
         /// <returns>The initial step.</returns>
-        public ISaslStep Initialize(MongoConnection connection, MongoClientIdentity identity)
+        public ISaslStep Initialize(Internal.MongoConnection connection, MongoClientIdentity identity)
         {
-            return new ManagedCramMD5Implementation(identity);
-            //return new GsaslCramMD5Implementation(identity);
-        }
+            return new ManagedDigestMD5Implementation(connection.ServerInstance.Address.Host, identity);
+        }       
     }
 }
