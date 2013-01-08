@@ -7,15 +7,24 @@ using MongoDB.Driver.Communication.Security.Mechanisms;
 
 namespace MongoDB.Driver.Communication.Security
 {
+    /// <summary>
+    /// An authentication store for the SASL protocol.
+    /// </summary>
     internal class SaslAuthenticationStore : IAuthenticationStore
     {
+        // private static fields
         private static readonly GssapiMechanism _gssapiMechanism;
         private static readonly List<ISaslMechanism> __negotiatedMechanisms;
 
+        // private fields
         private readonly MongoConnection _connection;
         private readonly MongoClientIdentity _identity;
         private bool _isAuthenticated;
 
+        // constructors
+        /// <summary>
+        /// Initializes the <see cref="SaslAuthenticationStore" /> class.
+        /// </summary>
         static SaslAuthenticationStore()
         {
             _gssapiMechanism = new GssapiMechanism();
@@ -26,6 +35,11 @@ namespace MongoDB.Driver.Communication.Security
             };
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SaslAuthenticationStore" /> class.
+        /// </summary>
+        /// <param name="connection">The connection.</param>
+        /// <param name="identity">The identity.</param>
         public SaslAuthenticationStore(MongoConnection connection, MongoClientIdentity identity)
         {
             _connection = connection;
@@ -33,6 +47,12 @@ namespace MongoDB.Driver.Communication.Security
             _isAuthenticated = _identity == null;
         }
 
+        // public methods
+        /// <summary>
+        /// Authenticates the connection against the given database.
+        /// </summary>
+        /// <param name="databaseName">Name of the database.</param>
+        /// <param name="credentials">The credentials.</param>
         public void Authenticate(string databaseName, MongoCredentials credentials)
         {
             if (_identity != null && !_isAuthenticated)
@@ -42,17 +62,33 @@ namespace MongoDB.Driver.Communication.Security
             }
         }
 
+        /// <summary>
+        /// Determines whether the connection can be authenticated against the given database.
+        /// </summary>
+        /// <param name="databaseName">Name of the database.</param>
+        /// <param name="credentials">The credentials.</param>
+        /// <returns></returns>
         public bool CanAuthenticate(string databaseName, MongoCredentials credentials)
         {
             // we can always authenticate a sasl connection...
             return true;
         }
 
+        /// <summary>
+        /// Determines whether the connection is currently authenticated against the given database.
+        /// </summary>
+        /// <param name="databaseName">Name of the database.</param>
+        /// <param name="credentials">The credentials.</param>
+        /// <returns></returns>
         public bool IsAuthenticated(string databaseName, MongoCredentials credentials)
         {
             return _isAuthenticated;
         }
 
+        /// <summary>
+        /// Logouts the connection out of the given database.
+        /// </summary>
+        /// <param name="databaseName">Name of the database.</param>
         public void Logout(string databaseName)
         {
             // do nothing
@@ -113,7 +149,7 @@ namespace MongoDB.Driver.Communication.Security
 
         private void HandleError(CommandResult result, int code)
         {
-            throw new MongoException(string.Format("Error: {0} - {1}", code, result.Response["errmsg"].AsString));
+            throw new MongoSecurityException(string.Format("Error: {0} - {1}", code, result.Response["errmsg"].AsString));
         }
 
         private ISaslMechanism Negotiate(MongoConnection connection)

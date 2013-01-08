@@ -4,17 +4,32 @@ using MongoDB.Driver.Internal;
 
 namespace MongoDB.Driver.Communication.Security
 {
+    /// <summary>
+    /// An authentication store for the MONGO-CR protocol.
+    /// </summary>
     internal class LegacyAuthenticationStore : IAuthenticationStore
     {
+        // private fields;
         private readonly Dictionary<string, Authentication> _authentications = new Dictionary<string, Authentication>();
         private readonly MongoConnection _connection;
 
+        // constructors
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LegacyAuthenticationStore" /> class.
+        /// </summary>
+        /// <param name="connection">The connection.</param>
         public LegacyAuthenticationStore(MongoConnection connection)
         {
             _authentications = new Dictionary<string, Authentication>();
             _connection = connection;
         }
 
+        // public methods
+        /// <summary>
+        /// Authenticates the connection against the given database.
+        /// </summary>
+        /// <param name="databaseName">Name of the database.</param>
+        /// <param name="credentials">The credentials.</param>
         public void Authenticate(string databaseName, MongoCredentials credentials)
         {
             if (!CanAuthenticate(databaseName, credentials))
@@ -66,6 +81,11 @@ namespace MongoDB.Driver.Communication.Security
         //    (with the restriction that a particular database can only be authenticated against once and therefore with only one set of credentials)
 
         // assume that IsAuthenticated was called first and returned false
+        /// <summary>
+        /// Determines whether the connection can be authenticated against the given database.
+        /// </summary>
+        /// <param name="databaseName">Name of the database.</param>
+        /// <param name="credentials">The credentials.</param>
         public bool CanAuthenticate(string databaseName, MongoCredentials credentials)
         {
             if (databaseName == null)
@@ -108,6 +128,12 @@ namespace MongoDB.Driver.Communication.Security
             }
         }
 
+        /// <summary>
+        /// Determines whether the connection is currently authenticated against the given database.
+        /// </summary>
+        /// <param name="databaseName">Name of the database.</param>
+        /// <param name="credentials">The credentials.</param>
+        /// <returns></returns>
         public bool IsAuthenticated(string databaseName, MongoCredentials credentials)
         {
             if (databaseName == null)
@@ -134,6 +160,12 @@ namespace MongoDB.Driver.Communication.Security
             }
         }
 
+        /// <summary>
+        /// Logouts the connection out of the given database.
+        /// </summary>
+        /// <param name="databaseName">Name of the database.</param>
+        /// <exception cref="MongoDB.Driver.MongoAuthenticationException">Error logging off.</exception>
+        /// <exception cref="MongoDB.Driver.MongoCommandException"></exception>
         public void Logout(string databaseName)
         {
             var logoutCommand = new CommandDocument("logout", 1);
