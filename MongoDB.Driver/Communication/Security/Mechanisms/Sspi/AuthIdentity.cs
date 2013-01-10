@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Security;
 
 namespace MongoDB.Driver.Communication.Security.Mechanisms.Sspi
 {
@@ -25,23 +26,23 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms.Sspi
         /// Initializes a new instance of the <see cref="AuthIdentity" /> struct.
         /// </summary>
         /// <param name="identity">The identity.</param>
-        public AuthIdentity(MongoClientIdentity identity)
+        public AuthIdentity(string username, SecureString password)
         {
             Username = null;
             UsernameLength = 0;
-            if (!string.IsNullOrEmpty(identity.Username))
+            if (!string.IsNullOrEmpty(username))
             {
-                Username = identity.Username;
-                UsernameLength = Username.Length;
+                Username = username;
+                UsernameLength = username.Length;
             }
 
             Password = IntPtr.Zero;
             PasswordLength = 0;
             
-            if (identity.SecurePassword != null && identity.SecurePassword.Length > 0)
+            if (password != null && password.Length > 0)
             {
-                Password = Marshal.SecureStringToGlobalAllocUnicode(identity.SecurePassword);
-                PasswordLength = identity.SecurePassword.Length;
+                Password = Marshal.SecureStringToGlobalAllocUnicode(password);
+                PasswordLength = password.Length;
             }
 
             Domain = null;

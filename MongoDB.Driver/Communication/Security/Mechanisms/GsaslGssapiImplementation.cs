@@ -9,7 +9,7 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
     {
         // private fields
         private readonly string _authorizationId;
-        private readonly MongoClientIdentity _identity;
+        private readonly MongoIdentityEvidence _evidence;
         private readonly string _servicePrincipalName;
 
         // constructors
@@ -17,13 +17,14 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
         /// Initializes a new instance of the <see cref="GsaslGssapiImplementation" /> class.
         /// </summary>
         /// <param name="serverName">Name of the server.</param>
-        /// <param name="identity">The identity.</param>
-        public GsaslGssapiImplementation(string serverName, MongoClientIdentity identity)
+        /// <param name="username">The username.</param>
+        /// <param name="evidence">The evidence.</param>
+        public GsaslGssapiImplementation(string serverName, string username, MongoIdentityEvidence evidence)
             : base("GSSAPI", new byte[0])
         {
-            _authorizationId = identity.Username;
+            _authorizationId = username;
+            _evidence = evidence;
             _servicePrincipalName = "mongodb/" + serverName;
-            _identity = identity;
         }
 
         // protected methods
@@ -34,12 +35,15 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
         protected override IEnumerable<KeyValuePair<string, string>> GetProperties()
         {
             yield return new KeyValuePair<string, string>("AUTHZID", _authorizationId);
-            yield return new KeyValuePair<string, string>("AUTHID", _identity.Username);
-            yield return new KeyValuePair<string, string>("PASSWORD", _identity.Password); // TODO: fix this to be secure
-            var atIndex = _identity.Username.LastIndexOf("@");
-            if (atIndex != -1 && atIndex != _identity.Username.Length - 1)
+            yield return new KeyValuePair<string, string>("AUTHID", _authorizationId);
+            if (_evidence is PasswordEvidence)
             {
-                var realm = _identity.Username.Substring(atIndex + 1);
+                yield return new KeyValuePair<string, string>("PASSWORD", ((PasswordEvidence)_evidence).Password); // TODO: fix this to be secure
+            }
+            var atIndex = _authorizationId.LastIndexOf("@");
+            if (atIndex != -1 && atIndex != _authorizationId.Length - 1)
+            {
+                var realm = _authorizationId.Substring(atIndex + 1);
                 yield return new KeyValuePair<string, string>("REALM", realm);
             }
             yield return new KeyValuePair<string, string>("SERVICE", _servicePrincipalName);

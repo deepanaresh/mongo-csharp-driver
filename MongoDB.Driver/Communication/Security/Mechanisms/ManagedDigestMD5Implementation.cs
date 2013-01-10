@@ -14,23 +14,26 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
         // private fields
         private readonly byte[] _cnonce;
         private readonly string _digestUri;
-        private readonly MongoClientIdentity _identity;
         private readonly string _nonceCount;
         private readonly string _qop;
+        private readonly string _password;
+        private readonly string _username;
 
         // constructors
         /// <summary>
         /// Initializes a new instance of the <see cref="ManagedDigestMD5Implementation" /> class.
         /// </summary>
         /// <param name="serverName">Name of the server.</param>
-        /// <param name="identity">The identity.</param>
-        public ManagedDigestMD5Implementation(string serverName, MongoClientIdentity identity)
+        /// <param name="username">The username.</param>
+        /// <param name="password">The password.</param>
+        public ManagedDigestMD5Implementation(string serverName, string username, string password)
         {
             _cnonce = CreateClientNonce();
             _digestUri = "mongodb/" + serverName;
-            _identity = identity;
             _nonceCount = "00000001";
             _qop = "auth";
+            _password = password;
+            _username = username;
         }
 
         // public properties
@@ -55,7 +58,7 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
             var encoding = Encoding.UTF8;
 
             var sb = new StringBuilder();
-            sb.AppendFormat("username=\"{0}\"", _identity.Username);
+            sb.AppendFormat("username=\"{0}\"", _username);
             sb.AppendFormat(",nonce=\"{0}\"", encoding.GetString(directives["nonce"]).Replace("\"", "\\\""));
             sb.AppendFormat(",cnonce=\"{0}\"", encoding.GetString(_cnonce).Replace("\"", "\\\""));
             sb.AppendFormat(",nc={0}", _nonceCount);
@@ -103,10 +106,10 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
         {
             // User Token
             var userToken = new List<byte>();
-            userToken.AddRange(encoding.GetBytes(_identity.Username));
+            userToken.AddRange(encoding.GetBytes(_username));
             userToken.Add((byte)':');
             userToken.Add((byte)':');
-            var passwordBytes = GetMongoPassword(md5, encoding, _identity.Username, _identity.Password);
+            var passwordBytes = GetMongoPassword(md5, encoding, _username, _password);
             var passwordHex = ToHexString(passwordBytes);
             userToken.AddRange(encoding.GetBytes(passwordHex));
             var userTokenBytes = md5.ComputeHash(userToken.ToArray());

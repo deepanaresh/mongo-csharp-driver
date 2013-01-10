@@ -11,7 +11,7 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
     {
         // private fields
         private readonly string _authorizationId;
-        private readonly MongoClientIdentity _identity;
+        private readonly MongoIdentityEvidence _evidence;
         private readonly string _servicePrincipalName;
 
         // constructors
@@ -20,11 +20,11 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
         /// </summary>
         /// <param name="serverName">Name of the server.</param>
         /// <param name="identity">The identity.</param>
-        public WindowsGssapiImplementation(string serverName, MongoClientIdentity identity)
+        public WindowsGssapiImplementation(string serverName, string username, MongoIdentityEvidence evidence)
         {
-            _authorizationId = identity.Username;
+            _authorizationId = username;
+            _evidence = evidence;
             _servicePrincipalName = "mongodb/" + serverName;
-            _identity = identity;
         }
 
         // properties
@@ -48,7 +48,7 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
             SecurityCredentials securityCredentials;
             try
             {
-                securityCredentials = SecurityCredentials.Acquire(SspiPackage.Kerberos, _identity);
+                securityCredentials = SecurityCredentials.Acquire(SspiPackage.Kerberos, _authorizationId, _evidence);
                 conversation.RegisterUnmanagedResourceForDisposal(securityCredentials);
             }
             catch (Win32Exception ex)
@@ -64,7 +64,7 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
             }
             catch (Win32Exception ex)
             {
-                if (!Object.ReferenceEquals(_identity, MongoClientIdentity.System))
+                if (_evidence is PasswordEvidence)
                 {
                     throw new MongoSecurityException("Unable to initialize security context. Ensure the username and password are correct.", ex);
                 }

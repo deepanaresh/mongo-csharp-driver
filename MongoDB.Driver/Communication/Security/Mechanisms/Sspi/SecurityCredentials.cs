@@ -42,7 +42,7 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms.Sspi
         /// <param name="package">The package.</param>
         /// <param name="identity">The identity.</param>
         /// <returns>A security credential.</returns>
-        public static SecurityCredentials Acquire(SspiPackage package, MongoClientIdentity identity)
+        public static SecurityCredentials Acquire(SspiPackage package, string username, MongoIdentityEvidence evidence)
         {
             long timestamp;
 
@@ -52,7 +52,8 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms.Sspi
             finally
             {
                 uint result;
-                if (Object.ReferenceEquals(identity, MongoClientIdentity.System))
+                var passwordEvidence = evidence as PasswordEvidence;
+                if (passwordEvidence == null)
                 {
                     result = Win32.AcquireCredentialsHandle(
                         null,
@@ -68,7 +69,7 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms.Sspi
                 }
                 else
                 {
-                    using(var authIdentity = new AuthIdentity(identity))
+                    using(var authIdentity = new AuthIdentity(username, passwordEvidence.SecurePassword))
                     {
                         // TODO: make this secure by using SecurePassword
                         result = Win32.AcquireCredentialsHandle(

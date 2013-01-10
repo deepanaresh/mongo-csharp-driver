@@ -13,12 +13,11 @@ namespace MongoDB.Driver.Communication.Security
     internal class SaslAuthenticationStore : IAuthenticationStore
     {
         // private static fields
-        private static readonly GssapiMechanism _gssapiMechanism;
         private static readonly List<ISaslMechanism> __negotiatedMechanisms;
 
         // private fields
         private readonly MongoConnection _connection;
-        private readonly MongoClientIdentity _identity;
+        private readonly MongoCredentials _credentials;
         private bool _isAuthenticated;
 
         // constructors
@@ -27,9 +26,9 @@ namespace MongoDB.Driver.Communication.Security
         /// </summary>
         static SaslAuthenticationStore()
         {
-            _gssapiMechanism = new GssapiMechanism();
             __negotiatedMechanisms = new List<ISaslMechanism>
             {
+                new GssapiMechanism(),
                 new CramMD5Mechanism(),
                 new DigestMD5Mechanism()
             };
@@ -40,11 +39,11 @@ namespace MongoDB.Driver.Communication.Security
         /// </summary>
         /// <param name="connection">The connection.</param>
         /// <param name="identity">The identity.</param>
-        public SaslAuthenticationStore(MongoConnection connection, MongoClientIdentity identity)
+        public SaslAuthenticationStore(MongoConnection connection, MongoCredentials credentials)
         {
             _connection = connection;
-            _identity = identity;
-            _isAuthenticated = _identity == null;
+            _credentials = credentials;
+            _isAuthenticated = credentials == null;
         }
 
         // public methods
@@ -55,7 +54,7 @@ namespace MongoDB.Driver.Communication.Security
         /// <param name="credentials">The credentials.</param>
         public void Authenticate(string databaseName, MongoCredentials credentials)
         {
-            if (_identity != null && !_isAuthenticated)
+            if (!_isAuthenticated)
             {
                 Authenticate();
                 _isAuthenticated = true;
@@ -99,8 +98,8 @@ namespace MongoDB.Driver.Communication.Security
         {
             using (var conversation = new SaslConversation())
             {
-                var mechanism = GetMechanism(_connection, _identity);
-                var currentStep = mechanism.Initialize(_connection, _identity);
+                var mechanism = GetMechanism(_connection);
+                var currentStep = mechanism.Initialize(_connection, _credentials);
 
                 var command = new CommandDocument
                 {
@@ -111,7 +110,7 @@ namespace MongoDB.Driver.Communication.Security
 
                 while (true)
                 {
-                    var result = _connection.RunCommand(_identity.Source, QueryFlags.SlaveOk, command, true);
+                    var result = _connection.RunCommand(_credentials.Source, QueryFlags.SlaveOk, command, true);
                     var code = result.Response["code"].AsInt32;
                     if (code != 0)
                     {
@@ -134,25 +133,7 @@ namespace MongoDB.Driver.Communication.Security
             }
         }
 
-        private ISaslMechanism GetMechanism(MongoConnection connection, MongoClientIdentity identity)
-        {
-            switch (identity.AuthenticationType)
-            {
-                case MongoAuthenticationType.Gssapi:
-                    return _gssapiMechanism;
-                case MongoAuthenticationType.Negotiate:
-                    return Negotiate(connection);
-            }
-
-            throw new NotSupportedException(string.Format("Unsupported credentials type {0}.", identity.AuthenticationType));
-        }
-
-        private void HandleError(CommandResult result, int code)
-        {
-            throw new MongoSecurityException(string.Format("Error: {0} - {1}", code, result.Response["errmsg"].AsString));
-        }
-
-        private ISaslMechanism Negotiate(MongoConnection connection)
+        private ISaslMechanism GetMechanism(MongoConnection connection)
         {
             var command = new CommandDocument
             {
@@ -161,20 +142,25 @@ namespace MongoDB.Driver.Communication.Security
                 { "payload", new byte[0] }
             };
 
-            var result = _connection.RunCommand(_identity.Source, QueryFlags.SlaveOk, command, true);
+            var result = _connection.RunCommand(_credentials.Source, QueryFlags.SlaveOk, command, true);
             if (result.Response.Contains("supportedMechanisms"))
             {
-                var supportedMechanisms = result.Response["supportedMechanisms"].AsBsonArray.ToLookup(x => x.AsString);
-                foreach (var factory in __negotiatedMechanisms)
+                var serverMechanisms = result.Response["supportedMechanisms"].AsBsonArray.ToLookup(x => x.AsString);
+                foreach (var mechanism in __negotiatedMechanisms)
                 {
-                    if (supportedMechanisms.Contains(factory.Name))
+                    if (serverMechanisms.Contains(mechanism.Name) && mechanism.CanUse(_credentials))
                     {
-                        return factory;
+                        return mechanism;
                     }
                 }
             }
 
             throw new MongoSecurityException("Unable to negotiate a security protocol with the server.");
+        }
+
+        private void HandleError(CommandResult result, int code)
+        {
+            throw new MongoSecurityException(string.Format("Error: {0} - {1}", code, result.Response["errmsg"].AsString));
         }
     }
 }

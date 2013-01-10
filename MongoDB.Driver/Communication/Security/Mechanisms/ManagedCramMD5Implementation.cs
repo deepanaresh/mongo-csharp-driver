@@ -12,16 +12,18 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
     internal class ManagedCramMD5Implementation : AbstractImplementation, ISaslStep
     {
         // private fields
-        private readonly MongoClientIdentity _identity;
+        private readonly string _username;
+        private readonly string _password;
 
         // constructors
         /// <summary>
         /// Initializes a new instance of the <see cref="ManagedCramMD5Implementation" /> class.
         /// </summary>
         /// <param name="identity">The identity.</param>
-        public ManagedCramMD5Implementation(MongoClientIdentity identity)
+        public ManagedCramMD5Implementation(string username, string password)
         {
-            _identity = identity;
+            _username = username;
+            _password = password;
         }
 
         // public methods
@@ -37,11 +39,11 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
         public ISaslStep Transition(SaslConversation conversation, byte[] bytesReceivedFromServer)
         {
             var encoding = Encoding.UTF8;
-            var mongoPassword = _identity.Username + ":mongo:" + _identity.Password;
+            var mongoPassword = _username + ":mongo:" + _password;
             byte[] password;
             using (var md5 = MD5.Create())
             {
-                password = GetMongoPassword(md5, encoding, _identity.Username, _identity.Password);
+                password = GetMongoPassword(md5, encoding, _username, _password);
                 var temp = ToHexString(password);
                 password = encoding.GetBytes(temp);
             }
@@ -52,7 +54,7 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
                 digest = hmacMd5.ComputeHash(bytesReceivedFromServer);
             }
 
-            var response = _identity.Username + " " + ToHexString(digest);
+            var response = _username + " " + ToHexString(digest);
             var bytesToSendToServer = encoding.GetBytes(response);
 
             return new SaslCompletionStep(bytesToSendToServer);

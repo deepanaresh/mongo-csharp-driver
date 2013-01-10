@@ -23,14 +23,31 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
 
         // public methods
         /// <summary>
+        /// Determines whether this instance can authenticate with the specified credentials.
+        /// </summary>
+        /// <param name="credentials">The credentials.</param>
+        /// <returns>
+        ///   <c>true</c> if this instance can authenticate with the specified credentials; otherwise, <c>false</c>.
+        /// </returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public bool CanUse(MongoCredentials credentials)
+        {
+            return credentials.AuthenticationType == MongoAuthenticationType.Negotiate &&
+                credentials.Evidence is PasswordEvidence;
+        }
+
+        /// <summary>
         /// Initializes the mechanism.
         /// </summary>
         /// <param name="connection">The connection.</param>
-        /// <param name="identity">The identity.</param>
+        /// <param name="credentials">The credentials.</param>
         /// <returns>The initial step.</returns>
-        public ISaslStep Initialize(Internal.MongoConnection connection, MongoClientIdentity identity)
+        public ISaslStep Initialize(Internal.MongoConnection connection, MongoCredentials credentials)
         {
-            return new ManagedDigestMD5Implementation(connection.ServerInstance.Address.Host, identity);
+            return new ManagedDigestMD5Implementation(
+                connection.ServerInstance.Address.Host,
+                credentials.Username,
+                ((PasswordEvidence)credentials.Evidence).Password);
         }       
     }
 }

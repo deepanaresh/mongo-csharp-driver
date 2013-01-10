@@ -76,9 +76,9 @@ namespace MongoDB.Driver.Internal
             _serverInstance = serverInstance;
             _createdAt = DateTime.UtcNow;
             _state = MongoConnectionState.Initial;
-            if (serverInstance.Settings.Identity != null)
+            if (serverInstance.Settings.DefaultCredentials != null)
             {
-                _authenticationStore = new SaslAuthenticationStore(this, serverInstance.Settings.Identity);
+                _authenticationStore = new SaslAuthenticationStore(this, serverInstance.Settings.DefaultCredentials);
             }
             else
             {
