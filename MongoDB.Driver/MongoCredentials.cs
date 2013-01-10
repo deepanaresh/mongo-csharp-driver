@@ -25,31 +25,55 @@ namespace MongoDB.Driver
     public class MongoCredentials : IEquatable<MongoCredentials>
     {
         // private fields
-        private string _username;
-        private string _password;
-        private bool _admin;
+        private readonly MongoAuthenticationType _authenticationType;
+        private readonly MongoIdentity _identity;
+        private readonly MongoIdentityEvidence _evidence;
 
         // constructors
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MongoCredentials" /> class.
+        /// </summary>
+        /// <param name="authenticationType">Type of the authentication.</param>
+        /// <param name="identity">The identity.</param>
+        /// <param name="evidence">The evidence.</param>
+        /// <exception cref="System.ArgumentNullException">identity</exception>
+        public MongoCredentials(MongoAuthenticationType authenticationType, MongoIdentity identity, MongoIdentityEvidence evidence)
+        {
+            if (identity == null)
+            {
+                throw new ArgumentNullException("identity");
+            }
+            if (evidence == null)
+            {
+                throw new ArgumentNullException("evidence");
+            }
+
+            _authenticationType = authenticationType;
+            _identity = identity;
+            _evidence = evidence;
+        }
+
         /// <summary>
         /// Creates a new instance of MongoCredentials.
         /// </summary>
         /// <param name="username">The username.</param>
         /// <param name="password">The password.</param>
+        [Obsolete("Use a different constructor.")]
         public MongoCredentials(string username, string password)
         {
+            _authenticationType = MongoAuthenticationType.Negotiate;
             ValidatePassword(password);
             if (username.EndsWith("(admin)", StringComparison.Ordinal))
             {
-                _username = username.Substring(0, username.Length - 7);
-                _password = password;
-                _admin = true;
+                _identity = new MongoInternalIdentity("admin", username.Substring(0, username.Length - 7));
             }
             else
             {
-                _username = username;
-                _password = password;
-                _admin = false;
+                // TODO: What should we do here?  We need a source...
+                _identity = new MongoInternalIdentity("test", username);
             }
+
+            _evidence = new PasswordEvidence(password);
         }
 
         /// <summary>
@@ -58,12 +82,22 @@ namespace MongoDB.Driver
         /// <param name="username">The username.</param>
         /// <param name="password">The password.</param>
         /// <param name="admin">Whether the credentials should be validated against the admin database.</param>
+        [Obsolete("Use a different constructor.")]
         public MongoCredentials(string username, string password, bool admin)
         {
+            _authenticationType = MongoAuthenticationType.Negotiate;
             ValidatePassword(password);
-            _username = username;
-            _password = password;
-            _admin = admin;
+            if (admin)
+            {
+                _identity = new MongoInternalIdentity("admin", username);
+            }
+            else
+            {
+                // TODO: What should we do here?  We need a source...
+                _identity = new MongoInternalIdentity("test", username);
+            }
+
+            _evidence = new PasswordEvidence(password);
         }
 
         /// <summary>
@@ -73,6 +107,7 @@ namespace MongoDB.Driver
         /// <param name="password">The password.</param>
         /// <returns>A new instance of MongoCredentials (or null if either parameter is null).</returns>
         // factory methods
+        [Obsolete("Use a different constructor.")]
         public static MongoCredentials Create(string username, string password)
         {
             if (username != null && password != null)
@@ -87,27 +122,70 @@ namespace MongoDB.Driver
 
         // public properties
         /// <summary>
-        /// Gets the username.
+        /// Gets whether the credentials should be validated against the admin database.
         /// </summary>
-        public string Username
+        [Obsolete("Use Source instead.")]
+        public bool Admin
         {
-            get { return _username; }
+            get { return _identity.Source == "admin"; }
+        }
+
+        /// <summary>
+        /// Gets the type of the authentication.
+        /// </summary>
+        public MongoAuthenticationType AuthenticationType
+        {
+            get { return _authenticationType; }
+        }
+
+        /// <summary>
+        /// Gets the evidence.
+        /// </summary>
+        public MongoIdentityEvidence Evidence
+        {
+            get { return _evidence; }
+        }
+
+        /// <summary>
+        /// Gets the identity.
+        /// </summary>
+        public MongoIdentity Identity
+        {
+            get { return _identity; }
         }
 
         /// <summary>
         /// Gets the password.
         /// </summary>
+        [Obsolete("Use Evidence instead.")]
         public string Password
         {
-            get { return _password; }
+            get
+            {
+                var passwordEvidence = _evidence as PasswordEvidence;
+                if (passwordEvidence != null)
+                {
+                    return passwordEvidence.Password;
+                }
+
+                return null;
+            }
         }
 
         /// <summary>
-        /// Gets whether the credentials should be validated against the admin database.
+        /// Gets the source.
         /// </summary>
-        public bool Admin
+        public string Source
         {
-            get { return _admin; }
+            get { return _identity.Source; }
+        }
+
+        /// <summary>
+        /// Gets the username.
+        /// </summary>
+        public string Username
+        {
+            get { return _identity.Username; }
         }
 
         // public operators
@@ -142,7 +220,7 @@ namespace MongoDB.Driver
         public bool Equals(MongoCredentials rhs)
         {
             if (object.ReferenceEquals(rhs, null) || GetType() != rhs.GetType()) { return false; }
-            return _username == rhs._username && _password == rhs._password && _admin == rhs._admin;
+            return _identity == rhs._identity;
         }
 
         /// <summary>
@@ -163,9 +241,7 @@ namespace MongoDB.Driver
         {
             // see Effective Java by Joshua Bloch
             int hash = 17;
-            hash = 37 * hash + _username.GetHashCode();
-            hash = 37 * hash + _password.GetHashCode();
-            hash = 37 * hash + _admin.GetHashCode();
+            hash = 37 * hash + _identity.GetHashCode();
             return hash;
         }
 
@@ -175,7 +251,7 @@ namespace MongoDB.Driver
         /// <returns>A string representation of the credentials.</returns>
         public override string ToString()
         {
-            return string.Format("{0}{1}:{2}", _username, _admin ? "(admin)" : "", _password);
+            return string.Format("{0}({1})", _identity.Username, _identity.Source);
         }
 
         // private methods
