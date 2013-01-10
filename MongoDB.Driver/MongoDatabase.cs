@@ -191,14 +191,6 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
-        /// Gets the credentials being used to access this database.
-        /// </summary>
-        public virtual MongoCredentials Credentials
-        {
-            get { return _settings.Credentials; }
-        }
-
-        /// <summary>
         /// Gets the default GridFS instance for this database. The default GridFS instance uses default GridFS
         /// settings. See also GetGridFS if you need to use GridFS with custom settings.
         /// </summary>
@@ -370,7 +362,7 @@ namespace MongoDB.Driver
         /// </summary>
         public virtual void Drop()
         {
-            _server.DropDatabase(_name, _settings.Credentials);
+            _server.DropDatabase(_name);
         }
 
         /// <summary>
@@ -870,7 +862,7 @@ namespace MongoDB.Driver
                 { "to", string.Format("{0}.{1}", _name, newCollectionName) },
                 { "dropTarget", dropTarget, dropTarget } // only added if dropTarget is true
             };
-            var adminDatabase = _server.GetDatabase("admin", adminCredentials);
+            var adminDatabase = _server.GetDatabase("admin");
             return adminDatabase.RunCommand(command);
         }
 
