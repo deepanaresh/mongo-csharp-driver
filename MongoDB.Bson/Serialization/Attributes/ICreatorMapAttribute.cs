@@ -16,14 +16,14 @@
 namespace MongoDB.Bson.Serialization
 {
     /// <summary>
-    /// Represents an attribute used to modify a constructor map.
+    /// Represents an attribute used to modify a creator map.
     /// </summary>
-    public interface IBsonConstructorMapAttribute
+    public interface IBsonCreatorMapAttribute
     {
         /// <summary>
-        /// Applies the attribute to the constructor map.
+        /// Applies the attribute to the creator map.
         /// </summary>
-        /// <param name="constructorMap">The constructor map.</param>
-        void Apply(BsonConstructorMap constructorMap);
+        /// <param name="creatorMap">The creator map.</param>
+        void Apply(BsonCreatorMap creatorMap);
     }
 }

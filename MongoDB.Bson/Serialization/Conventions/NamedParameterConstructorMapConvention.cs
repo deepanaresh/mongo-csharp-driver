@@ -15,48 +15,63 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace MongoDB.Bson.Serialization.Conventions
 {
     /// <summary>
     /// A convention that uses the names of the constructor parameters to find the matching members.
     /// </summary>
-    public class NamedParameterConstructorMapConvention : ConventionBase, IConstructorMapConvention
+    public class NamedParameterConstructorMapConvention : ConventionBase, ICreatorMapConvention
     {
         // public methods
         /// <summary>
         /// Applies a modification to the constructor map.
         /// </summary>
-        /// <param name="constructorMap">The constructor map.</param>
-        public void Apply(BsonConstructorMap constructorMap)
+        /// <param name="creatorMap">The constructor map.</param>
+        public void Apply(BsonCreatorMap creatorMap)
         {
-            if (constructorMap.Parameters == null)
+            if (creatorMap.Parameters == null)
             {
                 var memberMaps = new List<BsonMemberMap>();
 
-                var classMap = constructorMap.ClassMap;
-                var parameterNames = constructorMap.ConstructorInfo.GetParameters().Select(p => p.Name);
-                foreach (var parameterName in parameterNames)
+                IEnumerable<string> parameterNames = null;
+                var constructorInfo = creatorMap.MemberInfo as ConstructorInfo;
+                if (constructorInfo != null)
                 {
-                    // TODO: should really be using AllMemberMaps but that is not populated until Freeze is called
-                    var matchingMemberMaps = classMap.DeclaredMemberMaps.Where(m => string.Compare(m.MemberName, parameterName, true) == 0).ToArray(); // ignoreCase
-                    if (matchingMemberMaps.Length == 1)
-                    {
-                        memberMaps.Add(matchingMemberMaps[0]);
-                    }
-                    else if (matchingMemberMaps.Length > 1)
-                    {
-                        var message = string.Format("Constructor parameter '{0}' of class '{1}' does not match any member.", parameterName, classMap.ClassType.FullName);
-                        throw new BsonSerializationException(message);
-                    }
-                    else
-                    {
-                        var message = string.Format("Constructor parameter '{0}' of class '{1}' matches multiple members.", parameterName, classMap.ClassType.FullName);
-                        throw new BsonSerializationException(message);
-                    }
+                    parameterNames = constructorInfo.GetParameters().Select(p => p.Name);
+                }
+                var methodInfo = creatorMap.MemberInfo as MethodInfo;
+                if (methodInfo != null)
+                {
+                    parameterNames = methodInfo.GetParameters().Select(p => p.Name);
                 }
 
-                constructorMap.SetParameters(memberMaps);
+                if (parameterNames != null)
+                {
+                    var classMap = creatorMap.ClassMap;
+                    foreach (var parameterName in parameterNames)
+                    {
+                        // TODO: should really be using AllMemberMaps but that is not populated until Freeze is called
+                        var matchingMemberMaps = classMap.DeclaredMemberMaps.Where(m => string.Compare(m.MemberName, parameterName, true) == 0).ToArray(); // ignoreCase
+                        if (matchingMemberMaps.Length == 1)
+                        {
+                            memberMaps.Add(matchingMemberMaps[0]);
+                        }
+                        else if (matchingMemberMaps.Length > 1)
+                        {
+                            var message = string.Format("Constructor parameter '{0}' of class '{1}' does not match any member.", parameterName, classMap.ClassType.FullName);
+                            throw new BsonSerializationException(message);
+                        }
+                        else
+                        {
+                            var message = string.Format("Constructor parameter '{0}' of class '{1}' matches multiple members.", parameterName, classMap.ClassType.FullName);
+                            throw new BsonSerializationException(message);
+                        }
+                    }
+
+                    creatorMap.SetParameters(memberMaps);
+                }
             }
         }
     }

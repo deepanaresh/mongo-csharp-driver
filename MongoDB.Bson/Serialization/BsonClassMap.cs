@@ -42,7 +42,7 @@ namespace MongoDB.Bson.Serialization
         private BsonClassMap _baseClassMap; // null for class object and interfaces
         private Type _classType;
         private volatile IDiscriminatorConvention _cachedDiscriminatorConvention;
-        private readonly List<BsonConstructorMap> _constructorMaps;
+        private readonly List<BsonCreatorMap> _creatorMaps;
         private Func<object> _creator;
         private IConventionPack _conventionPack;
         private string _discriminator;
@@ -69,7 +69,7 @@ namespace MongoDB.Bson.Serialization
         protected BsonClassMap(Type classType)
         {
             _classType = classType;
-            _constructorMaps = new List<BsonConstructorMap>();
+            _creatorMaps = new List<BsonCreatorMap>();
             _conventionPack = ConventionRegistry.Lookup(classType);
             _isAnonymous = IsAnonymousType(classType);
             _allMemberMaps = new List<BsonMemberMap>();
@@ -108,9 +108,9 @@ namespace MongoDB.Bson.Serialization
         /// <summary>
         /// Gets the constructor maps.
         /// </summary>
-        public IEnumerable<BsonConstructorMap> ConstructorMaps
+        public IEnumerable<BsonCreatorMap> CreatorMaps
         {
-            get { return _constructorMaps; }
+            get { return _creatorMaps; }
         }
 
         /// <summary>
@@ -172,11 +172,11 @@ namespace MongoDB.Bson.Serialization
         }
 
         /// <summary>
-        /// Gets whether this class map has any constructor maps.
+        /// Gets whether this class map has any creator maps.
         /// </summary>
-        public bool HasConstructorMaps
+        public bool HasCreatorMaps
         {
-            get { return _constructorMaps.Count > 0; }
+            get { return _creatorMaps.Count > 0; }
         }
 
         /// <summary>
@@ -640,6 +640,37 @@ namespace MongoDB.Bson.Serialization
         }
 
         /// <summary>
+        /// Gets a member map (including inherited members).
+        /// </summary>
+        /// <param name="memberInfo">The member info.</param>
+        /// <returns>The member map (or null if the member was not found).</returns>
+        public BsonMemberMap GetMemberMapIncludingInherited(MemberInfo memberInfo)
+        {
+            if (memberInfo == null)
+            {
+                throw new ArgumentNullException("memberInfo");
+            }
+
+            // TODO: figure out implications of not being frozen yet
+            foreach (var memberMap in _declaredMemberMaps)
+            {
+                if (memberMap.MemberInfo == memberInfo)
+                {
+                    return memberMap;
+                }
+            }
+
+            var baseType = _classType.BaseType;
+            if (baseType != null)
+            {
+                var baseClassMap = LookupClassMap(baseType);
+                return baseClassMap.GetMemberMapIncludingInherited(memberInfo);
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Creates a constructor map for a constructor and adds it to the class map.
         /// </summary>
         /// <param name="constructorInfo">The constructor info.</param>
@@ -653,11 +684,11 @@ namespace MongoDB.Bson.Serialization
             EnsureMemberInfoIsForThisClass(constructorInfo);
 
             if (_frozen) { ThrowFrozenException(); }
-            var constructorMap = _constructorMaps.Find(m => m.ConstructorInfo == constructorInfo);
+            var constructorMap = _creatorMaps.OfType<BsonConstructorMap>().FirstOrDefault(m => m.ConstructorInfo == constructorInfo);
             if (constructorMap == null)
             {
                 constructorMap = new BsonConstructorMap(this, constructorInfo);
-                _constructorMaps.Add(constructorMap);
+                _creatorMaps.Add(constructorMap);
             }
             return constructorMap;
         }
@@ -667,27 +698,42 @@ namespace MongoDB.Bson.Serialization
         /// </summary>
         /// <param name="parameters">The parameters.</param>
         /// <returns>The constructor map.</returns>
-        public BsonConstructorMap MapConstructor(IEnumerable<BsonMemberMap> parameters)
+        public BsonConstructorMap MapConstructor(ConstructorInfo constructorInfo, IEnumerable<BsonMemberMap> parameters)
         {
-            if (parameters == null)
+            var constructorMap = MapConstructor(constructorInfo);
+            constructorMap.SetParameters(parameters);
+            return constructorMap;
+        }
+
+        /// <summary>
+        /// Creates a creator map and adds it to the class.
+        /// </summary>
+        /// <param name="delegate">The delegate.</param>
+        /// <returns>The factory method map (so method calls can be chained).</returns>
+        public BsonCreatorMap MapCreator(Delegate @delegate)
+        {
+            if (@delegate == null)
             {
-                throw new ArgumentNullException("parameters");
+                throw new ArgumentNullException("delegate");
             }
 
             if (_frozen) { ThrowFrozenException(); }
+            var creatorMap = new BsonCreatorMap(this, null, @delegate);
+            _creatorMaps.Add(creatorMap);
+            return creatorMap;
+        }
 
-            var bindingAttr = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            var types = parameters.Select(m => m.MemberType).ToArray();
-            var constructorInfo = _classType.GetConstructor(bindingAttr, null, types, null);
-            if (constructorInfo == null)
-            {
-                throw new ArgumentException("No matching constructor found.");
-            }
-
-            var constructorMap = MapConstructor(constructorInfo);
-
-            constructorMap.SetParameters(parameters);
-            return constructorMap;
+        /// <summary>
+        /// Creates a creator map and adds it to the class.
+        /// </summary>
+        /// <param name="delegate">The delegate.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns>The factory method map (so method calls can be chained).</returns>
+        public BsonCreatorMap MapCreator(Delegate @delegate, IEnumerable<BsonMemberMap> parameters)
+        {
+            var creatorMap = MapCreator(@delegate);
+            creatorMap.SetParameters(parameters);
+            return creatorMap;
         }
 
         /// <summary>
@@ -742,6 +788,42 @@ namespace MongoDB.Bson.Serialization
             var propertyMap = MapProperty(propertyName);
             SetExtraElementsMember(propertyMap);
             return propertyMap;
+        }
+
+        /// <summary>
+        /// Creates a factory method map and adds it to the class.
+        /// </summary>
+        /// <param name="methodInfo">The method info.</param>
+        /// <returns>The factory method map (so method calls can be chained).</returns>
+        public BsonFactoryMethodMap MapFactoryMethod(MethodInfo methodInfo)
+        {
+            if (methodInfo == null)
+            {
+                throw new ArgumentNullException("methodInfo");
+            }
+            EnsureMemberInfoIsForThisClass(methodInfo);
+
+            if (_frozen) { ThrowFrozenException(); }
+            var factoryMethodMap = _creatorMaps.OfType<BsonFactoryMethodMap>().FirstOrDefault(m => m.MethodInfo == methodInfo);
+            if (factoryMethodMap == null)
+            {
+                factoryMethodMap = new BsonFactoryMethodMap(this, methodInfo);
+                _creatorMaps.Add(factoryMethodMap);
+            }
+            return factoryMethodMap;
+        }
+
+        /// <summary>
+        /// Creates a factory method map and adds it to the class.
+        /// </summary>
+        /// <param name="methodInfo">The method info.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns>The factory method map (so method calls can be chained).</returns>
+        public BsonFactoryMethodMap MapFactoryMethod(MethodInfo methodInfo, IEnumerable<BsonMemberMap> parameters)
+        {
+            var factoryMethodMap = MapFactoryMethod(methodInfo);
+            factoryMethodMap.SetParameters(parameters);
+            return factoryMethodMap;
         }
 
         /// <summary>
@@ -876,7 +958,7 @@ namespace MongoDB.Bson.Serialization
         {
             if (_frozen) { ThrowFrozenException(); }
 
-            _constructorMaps.Clear();
+            _creatorMaps.Clear();
             _creator = null;
             _declaredMemberMaps.Clear();
             _discriminator = _classType.Name;
@@ -1022,10 +1104,10 @@ namespace MongoDB.Bson.Serialization
             EnsureMemberInfoIsForThisClass(constructorInfo);
 
             if (_frozen) { ThrowFrozenException(); }
-            var constructorMap = _constructorMaps.Find(m => m.ConstructorInfo == constructorInfo);
+            var constructorMap = _creatorMaps.OfType<BsonConstructorMap>().FirstOrDefault(m => m.ConstructorInfo == constructorInfo);
             if (constructorMap != null)
             {
-                _constructorMaps.Remove(constructorMap);
+                _creatorMaps.Remove(constructorMap);
             }
         }
 
@@ -1303,12 +1385,38 @@ namespace MongoDB.Bson.Serialization
         /// <summary>
         /// Creates a constructor map and adds it to the class map.
         /// </summary>
-        /// <param name="memberLambdas">Lambda expressions specifying the members.</param>
+        /// <param name="constructorLambda">Lambda expression specifying the constructor and parameters to use.</param>
         /// <returns>The member map.</returns>
-        public BsonConstructorMap MapConstructor(params Expression<Func<TClass, object>>[] memberLambdas)
+        public BsonConstructorMap MapConstructor(Expression<Func<TClass, TClass>> constructorLambda)
         {
-            var memberMaps = memberLambdas.Select(lambda => { var memberInfo = GetMemberInfoFromLambda(lambda); return MapMember(memberInfo); });
-            return MapConstructor(memberMaps);
+            var newExpression = constructorLambda.Body as NewExpression;
+            if (newExpression == null)
+            {
+                throw new ArgumentException("Body of lambda expression must call a constructor.");
+            }
+
+            var constructorInfo = newExpression.Constructor;
+            var parameters = new List<BsonMemberMap>();
+            foreach (var argument in newExpression.Arguments)
+            {
+                var memberInfo = GetMemberInfoFromExpression(argument);
+                var memberMap = GetMemberMapIncludingInherited(memberInfo);
+                parameters.Add(memberMap);
+            }
+
+            return MapConstructor(constructorInfo, parameters);
+        }
+
+        /// <summary>
+        /// Creates a creator map and adds it to the class map.
+        /// </summary>
+        /// <param name="creatorLambda">Lambda expression specifying the creator code and parameters to use.</param>
+        /// <returns>The member map.</returns>
+        public BsonCreatorMap MapCreator(Expression<Func<TClass, TClass>> creatorLambda)
+        {
+            // TODO: transform c => expression
+            // to: (x, y, ...) => expression' where expression' is expression with every C.X replaced by parameter x
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -1348,6 +1456,31 @@ namespace MongoDB.Bson.Serialization
             var propertyMap = MapProperty(propertyLambda);
             SetExtraElementsMember(propertyMap);
             return propertyMap;
+        }
+
+        /// <summary>
+        /// Creates a factory method map and adds it to the class map.
+        /// </summary>
+        /// <param name="factoryMethodLambda">Lambda expression specifying the factory method and parameters to use.</param>
+        /// <returns>The member map.</returns>
+        public BsonFactoryMethodMap MapFactoryMethod(Expression<Func<TClass, TClass>> factoryMethodLambda)
+        {
+            var methodCallExpression = factoryMethodLambda.Body as MethodCallExpression;
+            if (methodCallExpression == null)
+            {
+                throw new ArgumentException("Body of lambda expression must be a method call.");
+            }
+
+            var methodInfo = methodCallExpression.Method;
+            var parameters = new List<BsonMemberMap>();
+            foreach (var argument in methodCallExpression.Arguments)
+            {
+                var memberInfo = GetMemberInfoFromExpression(argument);
+                var memberMap = GetMemberMapIncludingInherited(memberInfo);
+                parameters.Add(memberMap);
+            }
+
+            return MapFactoryMethod(methodInfo, parameters);
         }
 
         /// <summary>
@@ -1408,7 +1541,7 @@ namespace MongoDB.Bson.Serialization
         /// <returns>The member map.</returns>
         public BsonMemberMap MapMember<TMember>(Expression<Func<TClass, TMember>> memberLambda)
         {
-            var memberInfo = GetMemberInfoFromLambda(memberLambda);
+            var memberInfo = GetMemberInfoFromExpression(memberLambda.Body);
             return MapMember(memberInfo);
         }
 
@@ -1440,7 +1573,7 @@ namespace MongoDB.Bson.Serialization
         /// <param name="memberLambda">A lambda expression specifying the member.</param>
         public void UnmapMember<TMember>(Expression<Func<TClass, TMember>> memberLambda)
         {
-            var memberInfo = GetMemberInfoFromLambda(memberLambda);
+            var memberInfo = GetMemberInfoFromExpression(memberLambda.Body);
             UnmapMember(memberInfo);
         }
 
@@ -1455,21 +1588,20 @@ namespace MongoDB.Bson.Serialization
         }
 
         // private static methods
-        private static MemberInfo GetMemberInfoFromLambda<TMember>(Expression<Func<TClass, TMember>> memberLambda)
+        private static MemberInfo GetMemberInfoFromExpression(Expression expression)
         {
-            var body = memberLambda.Body;
             MemberExpression memberExpression;
-            switch (body.NodeType)
+            switch (expression.NodeType)
             {
                 case ExpressionType.MemberAccess:
-                    memberExpression = (MemberExpression)body;
+                    memberExpression = (MemberExpression)expression;
                     break;
                 case ExpressionType.Convert:
-                    var convertExpression = (UnaryExpression)body;
+                    var convertExpression = (UnaryExpression)expression;
                     memberExpression = (MemberExpression)convertExpression.Operand;
                     break;
                 default:
-                    throw new BsonSerializationException("Invalid lambda expression");
+                    throw new BsonSerializationException("Invalid member expression");
             }
             var memberInfo = memberExpression.Member;
             switch (memberInfo.MemberType)
@@ -1478,14 +1610,14 @@ namespace MongoDB.Bson.Serialization
                 case MemberTypes.Property:
                     break;
                 default:
-                    throw new BsonSerializationException("Invalid lambda expression");
+                    throw new BsonSerializationException("Invalid member expression");
             }
             return memberInfo;
         }
 
         private static string GetMemberNameFromLambda<TMember>(Expression<Func<TClass, TMember>> memberLambda)
         {
-            return GetMemberInfoFromLambda(memberLambda).Name;
+            return GetMemberInfoFromExpression(memberLambda.Body).Name;
         }
     }
 }

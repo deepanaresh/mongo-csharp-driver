@@ -60,7 +60,7 @@ namespace MongoDB.Bson.Serialization.Conventions
         }
 
         // nested classes
-        private class AttributeConvention : ConventionBase, IClassMapConvention, IConstructorMapConvention, IMemberMapConvention, IPostProcessingConvention
+        private class AttributeConvention : ConventionBase, IClassMapConvention, ICreatorMapConvention, IMemberMapConvention, IPostProcessingConvention
         {
             // public methods
             public void Apply(BsonClassMap classMap)
@@ -86,11 +86,14 @@ namespace MongoDB.Bson.Serialization.Conventions
                 ThrowForDuplicateMemberMapAttributes(classMap);
             }
 
-            public void Apply(BsonConstructorMap constructorMap)
+            public void Apply(BsonCreatorMap creatorMap)
             {
-                foreach (IBsonConstructorMapAttribute attribute in constructorMap.ConstructorInfo.GetCustomAttributes(typeof(IBsonConstructorMapAttribute), false))
+                if (creatorMap.MemberInfo != null)
                 {
-                    attribute.Apply(constructorMap);
+                    foreach (IBsonCreatorMapAttribute attribute in creatorMap.MemberInfo.GetCustomAttributes(typeof(IBsonCreatorMapAttribute), false))
+                    {
+                        attribute.Apply(creatorMap);
+                    }
                 }
             }
 
@@ -135,7 +138,7 @@ namespace MongoDB.Bson.Serialization.Conventions
                 // let other constructors opt-in if they have any IBsonConstructorMapAttibute attributes
                 foreach (var constructorInfo in classMap.ClassType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
                 {
-                    var hasAttribute = constructorInfo.GetCustomAttributes(typeof(IBsonConstructorMapAttribute), false).Any();
+                    var hasAttribute = constructorInfo.GetCustomAttributes(typeof(IBsonCreatorMapAttribute), false).Any();
                     if (hasAttribute)
                     {
                         classMap.MapConstructor(constructorInfo);

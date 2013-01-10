@@ -21,41 +21,41 @@ using System.Reflection;
 namespace MongoDB.Bson.Serialization
 {
     /// <summary>
-    /// Represents a mapping to a constructor and its parameters.
+    /// Represents a mapping to a static factory method and its parameters.
     /// </summary>
-    public class BsonConstructorMap : BsonCreatorMap
+    public class BsonFactoryMethodMap : BsonCreatorMap
     {
         // private fields
-        private readonly ConstructorInfo _constructorInfo;
+        private readonly MethodInfo _methodInfo;
 
         // constructors
         /// <summary>
-        /// Initializes a new instance of the BsonConstructorMap class.
+        /// Initializes a new instance of the BsonFactoryMethodMap class.
         /// </summary>
         /// <param name="classMap">The class map.</param>
-        /// <param name="constructorInfo">The constructor info.</param>
-        public BsonConstructorMap(BsonClassMap classMap, ConstructorInfo constructorInfo)
-            : base(classMap, constructorInfo, CreateDelegate(constructorInfo))
+        /// <param name="methodInfo">The method info.</param>
+        public BsonFactoryMethodMap(BsonClassMap classMap, MethodInfo methodInfo)
+            : base(classMap, methodInfo, CreateDelegate(methodInfo))
         {
-            _constructorInfo = constructorInfo;
+            _methodInfo = methodInfo;
         }
 
         // public properties
         /// <summary>
-        /// Gets the constructor info.
+        /// Gets the method info.
         /// </summary>
-        public ConstructorInfo ConstructorInfo
+        public MethodInfo MethodInfo
         {
-            get { return _constructorInfo; }
+            get { return _methodInfo; }
         }
 
         // private static methods
-        private static Delegate CreateDelegate(ConstructorInfo constructorInfo)
+        private static Delegate CreateDelegate(MethodInfo methodInfo)
         {
             // build and compile the following delegate:
-            // (p1, p2, ...) => new TClass(p1, p2, ...)
-            var parameters = constructorInfo.GetParameters().Select(p => Expression.Parameter(p.ParameterType, p.Name)).ToArray();
-            var body = Expression.New(constructorInfo, parameters);
+            // (p1, p2, ...) => factoryMethod(p1, p2, ...)
+            var parameters = methodInfo.GetParameters().Select(p => Expression.Parameter(p.ParameterType, p.Name)).ToArray();
+            var body = Expression.Call(methodInfo, parameters);
             var lambda = Expression.Lambda(body, parameters);
             return lambda.Compile();
         }

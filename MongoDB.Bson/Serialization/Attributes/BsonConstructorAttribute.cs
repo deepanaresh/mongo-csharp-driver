@@ -22,7 +22,7 @@ namespace MongoDB.Bson.Serialization.Attributes
     /// Specifies that this constructor should be used for constructor-based deserialization.
     /// </summary>
     [AttributeUsage(AttributeTargets.Constructor)]
-    public class BsonConstructorAttribute : Attribute, IBsonConstructorMapAttribute
+    public class BsonConstructorAttribute : Attribute, IBsonCreatorMapAttribute
     {
         // private fields
         private string[] _memberNames;
@@ -54,14 +54,14 @@ namespace MongoDB.Bson.Serialization.Attributes
 
         // public methods
         /// <summary>
-        /// Applies a modification to the member map.
+        /// Applies a modification to the creator map.
         /// </summary>
-        /// <param name="constructorMap">The member map.</param>
-        public void Apply(BsonConstructorMap constructorMap)
+        /// <param name="creatorMap">The creator map.</param>
+        public void Apply(BsonCreatorMap creatorMap)
         {
             if (_memberNames != null)
             {
-                var classMap = constructorMap.ClassMap;
+                var classMap = creatorMap.ClassMap;
 
                 var parameters = new List<BsonMemberMap>();
                 foreach (var memberName in _memberNames)
@@ -72,9 +72,10 @@ namespace MongoDB.Bson.Serialization.Attributes
                         var message = string.Format("Class '{0}' does not have a mapped member named '{1}'.", classMap.ClassType.FullName, memberName);
                         throw new BsonSerializationException(message);
                     }
+                    parameters.Add(memberMap);
                 }
 
-                constructorMap.SetParameters(parameters);
+                creatorMap.SetParameters(parameters);
             }
         }
     }

@@ -128,9 +128,9 @@ namespace MongoDB.Bson.Serialization
                 Dictionary<string, object> values = null;
                 object obj = null;
                 ISupportInitialize supportsInitialization = null;
-                if (_classMap.HasConstructorMaps)
+                if (_classMap.HasCreatorMaps)
                 {
-                    // for constructor-based deserialization we first gather the values in a dictionary and then call a matching constructor
+                    // for creator-based deserialization we first gather the values in a dictionary and then call a matching creator
                     values = new Dictionary<string, object>();
                 }
                 else
@@ -270,7 +270,7 @@ namespace MongoDB.Bson.Serialization
                 }
                 else
                 {
-                    return CreateInstanceUsingConstructor(values);
+                    return CreateInstanceUsingCreator(values);
                 }
 
             }
@@ -464,16 +464,16 @@ namespace MongoDB.Bson.Serialization
         }
 
         // private methods
-        private bool ConstructorIsBetterMatch(BsonConstructorMap lhs, BsonConstructorMap rhs)
+        private bool CreatorIsBetterMatch(BsonCreatorMap lhs, BsonCreatorMap rhs)
         {
-            // a constructor is considered a better match if it has more parameters
+            // a creator is considered a better match if it has more parameters
             return lhs.Parameters.Count() > rhs.Parameters.Count();
         }
 
-        private bool ConstructorMatches(BsonConstructorMap constructorMap, Dictionary<string, object> values)
+        private bool CreatorMatches(BsonCreatorMap creatorMap, Dictionary<string, object> values)
         {
-            // a constructor is a match if we have a value for each parameter (either a deserialized value or a default value)
-            foreach (var parameter in constructorMap.Parameters)
+            // a creator is a match if we have a value for each parameter (either a deserialized value or a default value)
+            foreach (var parameter in creatorMap.Parameters)
             {
                 if (!values.ContainsKey(parameter.ElementName) && !parameter.IsDefaultValueSpecified)
                 {
@@ -483,32 +483,32 @@ namespace MongoDB.Bson.Serialization
             return true;
         }
 
-        private object CreateInstanceUsingConstructor(Dictionary<string, object> values)
+        private object CreateInstanceUsingCreator(Dictionary<string, object> values)
         {
-            // find best constructor
-            BsonConstructorMap bestConstructorMap = null;
-            foreach (var constructorMap in _classMap.ConstructorMaps)
+            // find best creator
+            BsonCreatorMap bestCreatorMap = null;
+            foreach (var creatorMap in _classMap.CreatorMaps)
             {
-                if (ConstructorMatches(constructorMap, values))
+                if (CreatorMatches(creatorMap, values))
                 {
-                    if (bestConstructorMap == null || ConstructorIsBetterMatch(constructorMap, bestConstructorMap))
+                    if (bestCreatorMap == null || CreatorIsBetterMatch(creatorMap, bestCreatorMap))
                     {
-                        bestConstructorMap = constructorMap;
+                        bestCreatorMap = creatorMap;
                     }
-                    else if (!ConstructorIsBetterMatch(bestConstructorMap, constructorMap))
+                    else if (!CreatorIsBetterMatch(bestCreatorMap, creatorMap))
                     {
-                        throw new BsonSerializationException("Unable to determine best matching constructor.");
+                        throw new BsonSerializationException("Unable to determine best matching creator.");
                     }
                 }
             }
-            if (bestConstructorMap == null)
+            if (bestCreatorMap == null)
             {
-                throw new BsonSerializationException("No matching constructor found.");
+                throw new BsonSerializationException("No matching creator found.");
             }
 
-            // match values to constructor parameters
+            // match values to creator parameters
             var arguments = new List<object>();
-            foreach (var parameter in bestConstructorMap.Parameters)
+            foreach (var parameter in bestCreatorMap.Parameters)
             {
                 object argument;
                 if (values.TryGetValue(parameter.ElementName, out argument))
@@ -522,11 +522,11 @@ namespace MongoDB.Bson.Serialization
                 }
                 else
                 {
-                    throw new BsonInternalException("Unable to determine value for constructor parameter.");
+                    throw new BsonInternalException("Unable to determine value for creator parameter.");
                 }
             }
 
-            var obj = bestConstructorMap.ConstructorInfo.Invoke(arguments.ToArray());
+            var obj = bestCreatorMap.Delegate.DynamicInvoke(arguments.ToArray());
 
             var supportsInitialization = obj as ISupportInitialize;
             if (supportsInitialization != null)
@@ -534,7 +534,7 @@ namespace MongoDB.Bson.Serialization
                 supportsInitialization.BeginInit();
             }
 
-            // try to process any left over values that weren't passed to the constructor
+            // try to process any left over values that weren't passed to the creator
             foreach (var keyValuePair in values)
             {
                 var elementName = keyValuePair.Key;

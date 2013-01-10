@@ -108,10 +108,12 @@
     <Compile Include="Serialization\Attributes\IBsonMemberMapAttribute.cs" />
     <Compile Include="Serialization\Attributes\IBsonClassMapAttribute.cs" />
     <Compile Include="Serialization\Attributes\IBsonPostProcessingAttribute.cs" />
-    <Compile Include="Serialization\Attributes\IConstructorMapAttribute.cs" />
+    <Compile Include="Serialization\Attributes\ICreatorMapAttribute.cs" />
     <Compile Include="Serialization\BsonClassMapSerializationProvider.cs" />
     <Compile Include="Serialization\BsonConstructorMap.cs" />
+    <Compile Include="Serialization\BsonCreatorMap.cs" />
     <Compile Include="Serialization\BsonDocumentBackedClass.cs" />
+    <Compile Include="Serialization\BsonFactoryMethodMap.cs" />
     <Compile Include="Serialization\Conventions\AttributeConventionPack.cs" />
     <Compile Include="Serialization\Conventions\CamelCaseElementNameConvention.cs" />
     <Compile Include="Serialization\Conventions\NamedParameterConstructorMapConvention.cs" />
@@ -125,7 +127,7 @@
     <Compile Include="Serialization\Conventions\DelegatePostProcessingConvention.cs" />
     <Compile Include="Serialization\Conventions\HierarchicalDiscriminatorConvention.cs" />
     <Compile Include="Serialization\Conventions\IClassMapConvention.cs" />
-    <Compile Include="Serialization\Conventions\IConstructorMapConvention.cs" />
+    <Compile Include="Serialization\Conventions\ICreatorMapConvention.cs" />
     <Compile Include="Serialization\Conventions\IConvention.cs" />
     <Compile Include="Serialization\Conventions\IConventionPack.cs" />
     <Compile Include="Serialization\Conventions\IgnoreExtraElementsConvention.cs" />

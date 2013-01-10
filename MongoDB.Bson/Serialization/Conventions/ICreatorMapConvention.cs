@@ -16,14 +16,14 @@
 namespace MongoDB.Bson.Serialization.Conventions
 {
     /// <summary>
-    /// Represents a convention that applies to a BsonConstructorMap.
+    /// Represents a convention that applies to a BsonCreatorMap.
     /// </summary>
-    public interface IConstructorMapConvention : IConvention
+    public interface ICreatorMapConvention : IConvention
     {
         /// <summary>
-        /// Applies a modification to the constructor map.
+        /// Applies a modification to the creator map.
         /// </summary>
-        /// <param name="constructorMap">The constructor map.</param>
-        void Apply(BsonConstructorMap constructorMap);
+        /// <param name="creatorMap">The creator map.</param>
+        void Apply(BsonCreatorMap creatorMap);
     }
 }
