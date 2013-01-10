@@ -40,7 +40,7 @@ namespace MongoDB.DriverUnitTests
                 ConnectionMode = ConnectionMode.ReplicaSet,
                 ConnectTimeout = TimeSpan.FromSeconds(1),
                 DatabaseName = "database",
-                DefaultCredentials = new MongoCredentials("username", "password"),
+                Credentials = MongoCredentials.Negotiate("db", "username", "password"),
                 FSync = true,
                 GuidRepresentation = GuidRepresentation.PythonLegacy,
                 IPv6 = true,
@@ -63,6 +63,7 @@ namespace MongoDB.DriverUnitTests
             };
 
             var connectionString = "mongodb://username:password@host/database?" + string.Join(";", new[] {
+                "authSource=db",
                 "ipv6=true",
                 "ssl=true", // UseSsl
                 "sslVerifyCertificate=false", // VerifySslCertificate
@@ -91,7 +92,10 @@ namespace MongoDB.DriverUnitTests
                 Assert.AreEqual(ConnectionMode.ReplicaSet, builder.ConnectionMode);
                 Assert.AreEqual(TimeSpan.FromSeconds(1), builder.ConnectTimeout);
                 Assert.AreEqual("database", builder.DatabaseName);
-                Assert.AreEqual(new MongoCredentials("username", "password"), builder.DefaultCredentials);
+                Assert.IsNotNull(builder.Credentials);
+                Assert.AreEqual("db", builder.Credentials.Source);
+                Assert.AreEqual("username", builder.Credentials.Username);
+                Assert.AreEqual("password", ((PasswordEvidence)builder.Credentials.Evidence).Password);
                 Assert.AreEqual(true, builder.FSync);
                 Assert.AreEqual(GuidRepresentation.PythonLegacy, builder.GuidRepresentation);
                 Assert.AreEqual(true, builder.IPv6);
@@ -203,6 +207,74 @@ namespace MongoDB.DriverUnitTests
         }
 
         [Test]
+        [TestCase(null, null, "mongodb://localhost")]
+        [TestCase("username", "password", "mongodb://username:password@localhost")]
+        [TestCase("usern;me", "p;ssword", "mongodb://usern%3Bme:p%3Bssword@localhost")]
+        public void TestCredentials(string username, string password, string connectionString)
+        {
+            var credentials = (username == null) ? null : MongoCredentials.Negotiate("admin", username, password);
+            var built = new MongoUrlBuilder { Server = _localhost, Credentials = credentials };
+
+            foreach (var url in EnumerateBuiltAndParsedBuilders(built, connectionString))
+            {
+                Assert.AreEqual(credentials, url.Credentials);
+                Assert.AreEqual(connectionString, url.ToString());
+            }
+        }
+
+        [Test]
+        [TestCase(null, null, "mongodb://@localhost/?authProtocol=GSSAPI")]
+        [TestCase("user", "", "mongodb://user:@localhost/?authProtocol=GSSAPI")]
+        [TestCase("user", "pass", "mongodb://user:pass@localhost/?authProtocol=GSSAPI")]
+        [TestCase("user@gmail.com", "pass", "mongodb://user@gmail.com:pass@localhost/?authProtocol=GSSAPI")]
+        [TestCase("user%40gmail.com", "pass", "mongodb://user@gmail.com:pass@localhost/?authProtocol=GSSAPI")]
+        public void TestCredentials_Gssapi(string username, string password, string connectionString)
+        {
+            MongoCredentials credentials = MongoCredentials.Gssapi();
+            if(username != null)
+            {
+                credentials = MongoCredentials.Gssapi(Uri.UnescapeDataString(username), Uri.UnescapeDataString(password));
+            }
+            var built = new MongoUrlBuilder { Credentials = credentials };
+
+            foreach (var builder in EnumerateBuiltAndParsedBuilders(built, connectionString))
+            {
+                Assert.IsNotNull(builder.Credentials);
+                if (username != null)
+                {
+                    Assert.AreEqual(credentials.Username, builder.Credentials.Username);
+                    Assert.AreEqual(((PasswordEvidence)builder.Credentials.Evidence).Password, ((PasswordEvidence)builder.Credentials.Evidence).Password);
+                }
+                else
+                {
+                    Assert.IsInstanceOf<ProcessEvidence>(builder.Credentials.Evidence);
+                }
+                Assert.AreEqual("$external", credentials.Source);
+                Assert.AreEqual(credentials.Protocol, builder.Credentials.Protocol);
+            }
+        }
+
+        [Test]
+        [TestCase("user", "", "foo", "mongodb://user:@localhost/foo?authProtocol=STRONGEST")]
+        [TestCase("user", "pass", "foo", "mongodb://user:pass@localhost/foo?authProtocol=STRONGEST")]
+        [TestCase("user@gmail.com", "pass", "foo", "mongodb://user@gmail.com:pass@localhost/foo?authProtocol=STRONGEST")]
+        [TestCase("user%40gmail.com", "pass", "foo", "mongodb://user@gmail.com:pass@localhost/foo?authProtocol=STRONGEST")]
+        public void TestCredentials_Negotiate(string username, string password, string source, string connectionString)
+        {
+            var credentials = MongoCredentials.Negotiate(source, Uri.UnescapeDataString(username), Uri.UnescapeDataString(password));
+            var built = new MongoUrlBuilder { Credentials = credentials };
+
+            foreach (var builder in EnumerateBuiltAndParsedBuilders(built, connectionString))
+            {
+                Assert.IsNotNull(builder.Credentials);
+                Assert.AreEqual(credentials.Username, builder.Credentials.Username);
+                Assert.AreEqual(((PasswordEvidence)builder.Credentials.Evidence).Password, ((PasswordEvidence)builder.Credentials.Evidence).Password);
+                Assert.AreEqual(source, credentials.Source);
+                Assert.AreEqual(credentials.Protocol, builder.Credentials.Protocol);
+            }
+        }
+
+        [Test]
         [TestCase(null, "mongodb://localhost")]
         [TestCase("database", "mongodb://localhost/database")]
         public void TestDatabaseName(string databaseName, string connectionString)
@@ -213,23 +285,6 @@ namespace MongoDB.DriverUnitTests
             {
                 Assert.AreEqual(databaseName, builder.DatabaseName);
                 Assert.AreEqual(connectionString, builder.ToString());
-            }
-        }
-
-        [Test]
-        [TestCase(null, null, "mongodb://localhost")]
-        [TestCase("username", "password", "mongodb://username:password@localhost")]
-        [TestCase("usern;me", "p;ssword", "mongodb://usern%3Bme:p%3Bssword@localhost")]
-        public void TestDefaultCredentials(string username, string password, string connectionString)
-        {
-            var defaultCredentials = (username == null) ? null : new MongoCredentials(username, password);
-            var built = new MongoUrlBuilder { Server = _localhost, DefaultCredentials = defaultCredentials };
-
-            foreach (var builder in EnumerateBuiltAndParsedBuilders(built, connectionString))
-            {
-                Assert.AreEqual(defaultCredentials, builder.DefaultCredentials);
-                Assert.AreEqual(connectionString, builder.ToString());
-                Assert.AreEqual(null, builder.Identity);
             }
         }
 
@@ -245,10 +300,9 @@ namespace MongoDB.DriverUnitTests
                 Assert.AreEqual(ConnectionMode.Automatic, builder.ConnectionMode);
                 Assert.AreEqual(MongoDefaults.ConnectTimeout, builder.ConnectTimeout);
                 Assert.AreEqual(null, builder.DatabaseName);
-                Assert.AreEqual(null, builder.DefaultCredentials);
+                Assert.AreEqual(null, builder.Credentials);
                 Assert.AreEqual(null, builder.FSync);
                 Assert.AreEqual(MongoDefaults.GuidRepresentation, builder.GuidRepresentation);
-                Assert.AreEqual(null, builder.Identity);
                 Assert.AreEqual(false, builder.IPv6);
                 Assert.AreEqual(null, builder.Journal);
                 Assert.AreEqual(MongoDefaults.MaxConnectionIdleTime, builder.MaxConnectionIdleTime);
@@ -391,66 +445,6 @@ namespace MongoDB.DriverUnitTests
                 Assert.AreEqual(guidRepresentation ?? MongoDefaults.GuidRepresentation, builder.GuidRepresentation);
                 Assert.AreEqual(canonicalConnectionString, builder.ToString());
             }
-        }
-
-        [Test]
-        [TestCase("user", "", "mongodb://user:@localhost/?authType=GSSAPI")]
-        [TestCase("user", "pass", "mongodb://user:pass@localhost/?authType=GSSAPI")]
-        [TestCase("user@gmail.com", "pass", "mongodb://user@gmail.com:pass@localhost/?authType=GSSAPI")]
-        [TestCase("user%40gmail.com", "pass", "mongodb://user@gmail.com:pass@localhost/?authType=GSSAPI")]
-        public void TestIdentity_Gssapi(string username, string password, string connectionString)
-        {
-            var identity = MongoClientIdentity.Gssapi(Uri.UnescapeDataString(username), Uri.UnescapeDataString(password));
-            var built = new MongoUrlBuilder { Identity = identity };
-
-            foreach (var builder in EnumerateBuiltAndParsedBuilders(built, connectionString))
-            {
-                Assert.IsNotNull(builder.Identity);
-                Assert.AreEqual(identity.Username, builder.Identity.Username);
-                Assert.AreEqual(identity.Password, builder.Identity.Password);
-                Assert.AreEqual("$external", identity.Source);
-                Assert.AreEqual(identity.AuthenticationType, builder.Identity.AuthenticationType);
-            }
-        }
-
-        [Test]
-        [TestCase("user", "", "foo", "mongodb://user:@localhost/foo?authType=NEGOTIATE")]
-        [TestCase("user", "pass", "foo", "mongodb://user:pass@localhost/foo?authType=NEGOTIATE")]
-        [TestCase("user@gmail.com", "pass", "foo", "mongodb://user@gmail.com:pass@localhost/foo?authType=NEGOTIATE")]
-        [TestCase("user%40gmail.com", "pass", "foo", "mongodb://user@gmail.com:pass@localhost/foo?authType=NEGOTIATE")]
-        public void TestIdentity_Negotiate(string username, string password, string source, string connectionString)
-        {
-            var identity = MongoClientIdentity.Negotiate(Uri.UnescapeDataString(username), Uri.UnescapeDataString(password), source);
-            var built = new MongoUrlBuilder { Identity = identity };
-
-            foreach (var builder in EnumerateBuiltAndParsedBuilders(built, connectionString))
-            {
-                Assert.IsNotNull(builder.Identity);
-                Assert.AreEqual(identity.Username, builder.Identity.Username);
-                Assert.AreEqual(identity.Password, builder.Identity.Password);
-                Assert.AreEqual(source, identity.Source);
-                Assert.AreEqual(identity.AuthenticationType, builder.Identity.AuthenticationType);
-            }
-        }
-
-        [Test]
-        public void TestIdentity_NegotiateThrowsWithoutDatabase()
-        {
-            var connectionString = "mongodb://user@gmail.com:pass@localhost/?authType=NEGOTIATE";
-            Assert.Throws<FormatException>(() => new MongoUrlBuilder(connectionString));
-        }
-
-        [Test]
-        public void TestIdentity_System()
-        {
-            var connectionString = "mongodb://localhost/?authType=GSSAPI";
-            var builder = new MongoUrlBuilder(connectionString);
-            var built = new MongoUrlBuilder { Identity = MongoClientIdentity.System };
-
-            Assert.IsNotNull(builder.Identity);
-            Assert.AreSame(built.Identity, builder.Identity);
-            Assert.AreSame(MongoClientIdentity.System, built.Identity);
-            Assert.AreEqual("$external", builder.Identity.Source);
         }
 
         [Test]

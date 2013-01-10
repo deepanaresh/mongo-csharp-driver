@@ -13,7 +13,7 @@ namespace MongoDB.Driver
         private readonly static MongoClientIdentity _system = SystemMongoClientIdentity.Instance;
 
         // private fields
-        private readonly MongoAuthenticationType _authenticationType;
+        private readonly MongoAuthenticationProtocol _authenticationType;
         private readonly SecureString _password;
         private readonly string _source;
         private readonly string _username;
@@ -26,7 +26,7 @@ namespace MongoDB.Driver
         /// <param name="password">The password.</param>
         /// <param name="source">The source.</param>
         /// <param name="authenticationType">Type of the authentication.</param>
-        internal MongoClientIdentity(string username, SecureString password, string source, MongoAuthenticationType authenticationType)
+        internal MongoClientIdentity(string username, SecureString password, string source, MongoAuthenticationProtocol authenticationType)
         {
             _username = username;
             if (password != null)
@@ -119,7 +119,7 @@ namespace MongoDB.Driver
         /// <summary>
         /// Gets the type of authentication used to confirm this identity.
         /// </summary>
-        public MongoAuthenticationType AuthenticationType
+        public MongoAuthenticationProtocol AuthenticationType
         {
             get { return _authenticationType; }
         }
@@ -222,14 +222,14 @@ namespace MongoDB.Driver
         private class GssapiMongoClientIdentity : MongoClientIdentity
         {
             public GssapiMongoClientIdentity(string username, SecureString password)
-                : base(username, password, "$external", MongoAuthenticationType.Gssapi)
+                : base(username, password, "$external", MongoAuthenticationProtocol.Gssapi)
             { }
         }
 
         private class NegotiatedMongoClientIdentity : MongoClientIdentity
         {
             public NegotiatedMongoClientIdentity(string username, SecureString password, string source)
-                : base(username, password, source, MongoAuthenticationType.Negotiate)
+                : base(username, password, source, MongoAuthenticationProtocol.Strongest)
             { }
         }
 

@@ -2,17 +2,17 @@
 namespace MongoDB.Driver
 {
     /// <summary>
-    /// The authentication type used to communicate with MongoDB.
+    /// The protocol used to authenticate with MongoDB.
     /// </summary>
-    public enum MongoAuthenticationType
+    public enum MongoAuthenticationProtocol
     {
         /// <summary>
         /// Authenticate to the server using GSSAPI.
         /// </summary>
         Gssapi,
         /// <summary>
-        /// Authenticate to the server using a Negotiation.
+        /// Authenticate to the server using the strongest means possible.
         /// </summary>
-        Negotiate
+        Strongest
     }
 }

@@ -215,7 +215,7 @@ namespace MongoDB.Driver
             {
                 var credentials = _credentialsStore[key];
                 sb.Append(separator);
-                sb.AppendFormat("{0}@{1}", credentials.ToString(), key);
+                sb.Append(credentials.ToString());
                 separator = ",";
             }
             sb.Append("}");

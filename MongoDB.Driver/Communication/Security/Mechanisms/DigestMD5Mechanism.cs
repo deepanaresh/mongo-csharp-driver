@@ -32,7 +32,7 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
         /// <exception cref="System.NotImplementedException"></exception>
         public bool CanUse(MongoCredentials credentials)
         {
-            return credentials.AuthenticationType == MongoAuthenticationType.Negotiate &&
+            return credentials.Protocol == MongoAuthenticationProtocol.Strongest &&
                 credentials.Evidence is PasswordEvidence;
         }
 

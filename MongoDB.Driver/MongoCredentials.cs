@@ -27,7 +27,7 @@ namespace MongoDB.Driver
     public class MongoCredentials : IEquatable<MongoCredentials>
     {
         // private fields
-        private readonly MongoAuthenticationType _authenticationType;
+        private readonly MongoAuthenticationProtocol _protocol;
         private readonly MongoIdentity _identity;
         private readonly MongoIdentityEvidence _evidence;
 
@@ -35,11 +35,11 @@ namespace MongoDB.Driver
         /// <summary>
         /// Initializes a new instance of the <see cref="MongoCredentials" /> class.
         /// </summary>
-        /// <param name="authenticationType">Type of the authentication.</param>
+        /// <param name="protocol">Protocol to authenticate with.</param>
         /// <param name="identity">The identity.</param>
         /// <param name="evidence">The evidence.</param>
         /// <exception cref="System.ArgumentNullException">identity</exception>
-        public MongoCredentials(MongoAuthenticationType authenticationType, MongoIdentity identity, MongoIdentityEvidence evidence)
+        public MongoCredentials(MongoAuthenticationProtocol protocol, MongoIdentity identity, MongoIdentityEvidence evidence)
         {
             if (identity == null)
             {
@@ -50,7 +50,7 @@ namespace MongoDB.Driver
                 throw new ArgumentNullException("evidence");
             }
 
-            _authenticationType = authenticationType;
+            _protocol = protocol;
             _identity = identity;
             _evidence = evidence;
         }
@@ -63,7 +63,7 @@ namespace MongoDB.Driver
         [Obsolete("Use a different constructor.")]
         public MongoCredentials(string username, string password)
         {
-            _authenticationType = MongoAuthenticationType.Negotiate;
+            _protocol = MongoAuthenticationProtocol.Strongest;
             ValidatePassword(password);
             if (username.EndsWith("(admin)", StringComparison.Ordinal))
             {
@@ -87,7 +87,7 @@ namespace MongoDB.Driver
         [Obsolete("Use a different constructor.")]
         public MongoCredentials(string username, string password, bool admin)
         {
-            _authenticationType = MongoAuthenticationType.Negotiate;
+            _protocol = MongoAuthenticationProtocol.Strongest;
             ValidatePassword(password);
             if (admin)
             {
@@ -133,11 +133,11 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
-        /// Gets the type of the authentication.
+        /// Gets the protocol to authenticate with.
         /// </summary>
-        public MongoAuthenticationType AuthenticationType
+        public MongoAuthenticationProtocol Protocol
         {
-            get { return _authenticationType; }
+            get { return _protocol; }
         }
 
         /// <summary>
@@ -222,7 +222,7 @@ namespace MongoDB.Driver
         {
             var username = string.Format("{0}@{1}", Environment.UserName, Environment.UserDomainName);
             return new MongoCredentials(
-                MongoAuthenticationType.Gssapi,
+                MongoAuthenticationProtocol.Gssapi,
                 new MongoExternalIdentity(username),
                 new ProcessEvidence());
         }
@@ -236,7 +236,7 @@ namespace MongoDB.Driver
         public static MongoCredentials Gssapi(string username, string password)
         {
             return new MongoCredentials(
-                MongoAuthenticationType.Gssapi,
+                MongoAuthenticationProtocol.Gssapi,
                 new MongoExternalIdentity(username),
                 new PasswordEvidence(password));
         }
@@ -250,7 +250,7 @@ namespace MongoDB.Driver
         public static MongoCredentials Gssapi(string username, SecureString password)
         {
             return new MongoCredentials(
-                MongoAuthenticationType.Gssapi,
+                MongoAuthenticationProtocol.Gssapi,
                 new MongoExternalIdentity(username),
                 new PasswordEvidence(password));
         }
@@ -265,7 +265,7 @@ namespace MongoDB.Driver
         public static MongoCredentials Negotiate(string databaseName, string username, string password)
         {
             return new MongoCredentials(
-                MongoAuthenticationType.Negotiate,
+                MongoAuthenticationProtocol.Strongest,
                 new MongoInternalIdentity(databaseName, username),
                 new PasswordEvidence(password));
         }
@@ -280,7 +280,7 @@ namespace MongoDB.Driver
         public static MongoCredentials Negotiate(string databaseName, string username, SecureString password)
         {
             return new MongoCredentials(
-                MongoAuthenticationType.Negotiate,
+                MongoAuthenticationProtocol.Strongest,
                 new MongoInternalIdentity(databaseName, username),
                 new PasswordEvidence(password));
         }
@@ -325,7 +325,7 @@ namespace MongoDB.Driver
         /// <returns>A string representation of the credentials.</returns>
         public override string ToString()
         {
-            return string.Format("{0}({1})", _identity.Username, _identity.Source);
+            return string.Format("{0}@{1}", _identity.Username, _identity.Source);
         }
 
         // private methods

@@ -156,6 +156,14 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
+        /// Gets the credentials.
+        /// </summary>
+        public MongoCredentials Credentials
+        {
+            get { return _credentials; }
+        }
+
+        /// <summary>
         /// Gets the optional database name.
         /// </summary>
         public string DatabaseName
@@ -166,9 +174,10 @@ namespace MongoDB.Driver
         /// <summary>
         /// Gets the default credentials.
         /// </summary>
+        [Obsolete("Use Credentials instead.")]
         public MongoCredentials DefaultCredentials
         {
-            get { return _credentials; }
+            get { return Credentials; }
         }
 
         /// <summary>

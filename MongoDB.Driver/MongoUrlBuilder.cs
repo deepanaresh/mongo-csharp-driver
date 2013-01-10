@@ -30,7 +30,7 @@ namespace MongoDB.Driver
     [Serializable]
     public class MongoUrlBuilder
     {
-        private const string AUTH_TYPE_DEFAULT = "NEGOTIATE";
+        private const string AUTH_TYPE_DEFAULT = "STRONGEST";
 
         // private fields
         private ConnectionMode _connectionMode;
@@ -152,20 +152,7 @@ namespace MongoDB.Driver
         public MongoCredentials Credentials
         {
             get { return _credentials; }
-            set
-            {
-                if (value != null)
-                {
-                    if (_databaseName != null && value.Source != _databaseName)
-                    {
-                        throw new ArgumentException("Credentials Source must be the same as the DatabaseName.");
-                    }
-
-                    _databaseName = value.Source;
-                }
-
-                _credentials = value;
-            }
+            set { _credentials = value; }
         }
 
         /// <summary>
@@ -174,14 +161,7 @@ namespace MongoDB.Driver
         public string DatabaseName
         {
             get { return _databaseName; }
-            set
-            {
-                if (_credentials != null && _credentials.Source != value)
-                {
-                    throw new ArgumentException("DatabaseName must be the same as the Credentials Source.");
-                }
-                _databaseName = value;
-            }
+            set { _databaseName = value; }
         }
 
         /// <summary>
@@ -797,7 +777,8 @@ namespace MongoDB.Driver
 
                 _databaseName = (databaseName != "") ? databaseName : null;
 
-                string authType = null;
+                string authProtocol = null;
+                string authSource = null;
                 if (!string.IsNullOrEmpty(query))
                 {
                     foreach (var pair in query.Split('&', ';'))
@@ -812,8 +793,11 @@ namespace MongoDB.Driver
 
                         switch (name.ToLower())
                         {
-                            case "authtype":
-                                authType = value;
+                            case "authsource":
+                                authSource = value;
+                                break;
+                            case "authprotocol":
+                                authProtocol = value;
                                 break;
                             case "connect":
                                 ConnectionMode = ParseConnectionMode(name, value);
@@ -926,8 +910,7 @@ namespace MongoDB.Driver
                         }
                     }
                 }
-
-                HandleCredentials(username, password, databaseName, authType);
+                HandleCredentials(username, password, _databaseName, authSource, authProtocol);
             }
             else
             {
@@ -935,9 +918,11 @@ namespace MongoDB.Driver
             }
         }
 
-        private void HandleCredentials(string username, string password, string databaseName, string authType)
+        private void HandleCredentials(string username, string password, string databaseName, string authSource, string authType)
         {
             authType = authType ?? AUTH_TYPE_DEFAULT;
+            var source = authSource ?? databaseName ?? "admin";
+
             switch (authType.ToLower())
             {
                 case "gssapi":
@@ -950,15 +935,15 @@ namespace MongoDB.Driver
                         _credentials = MongoCredentials.Gssapi();
                     }
                     break;
-                case "negotiate":
-                    if (string.IsNullOrEmpty(databaseName))
+                case "strongest":
+                    if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty("password"))
                     {
-                        throw new FormatException("NEGOTIATE credentials must be specified in conjunction with a databaseName.");
+                        return;
                     }
-                    _credentials = MongoCredentials.Negotiate(databaseName, username, password);
+                    _credentials = MongoCredentials.Negotiate(source, username, password);
                     break;
                 default:
-                    var message = string.Format("{0} is not a valid authType value. GSSAPI, and NEGOTIATE are the only valid authType values.", authType);
+                    var message = string.Format("{0} is not a valid authProtocol value. GSSAPI, and STRONGEST are the only valid authProtocol values.", authType);
                     throw new ArgumentException(message);
             }
         }
@@ -990,9 +975,10 @@ namespace MongoDB.Driver
         {
             StringBuilder url = new StringBuilder();
             url.Append("mongodb://");
-            if (_credentials != null && _credentials.AuthenticationType == MongoAuthenticationType.Negotiate)
+            if (_credentials != null && _credentials.Protocol == MongoAuthenticationProtocol.Strongest)
             {
-                url.AppendFormat("{0}:******@", Uri.EscapeDataString(_credentials.Username));
+                var password = ((PasswordEvidence)_credentials.Evidence).Password;
+                url.AppendFormat("{0}:{1}@", Uri.EscapeDataString(_credentials.Username), Uri.EscapeDataString(password));
             }
             if (_servers != null)
             {
@@ -1011,7 +997,7 @@ namespace MongoDB.Driver
                     firstServer = false;
                 }
             }
-            if (_databaseName != null)
+            if (_databaseName != null && _databaseName != "admin")
             {
                 url.Append("/");
                 url.Append(_databaseName);
@@ -1019,16 +1005,24 @@ namespace MongoDB.Driver
             var query = new StringBuilder();
             if (_credentials != null)
             {
-                switch (_credentials.AuthenticationType)
+                switch (_credentials.Protocol)
                 {
-                    case MongoAuthenticationType.Negotiate:
+                    case MongoAuthenticationProtocol.Strongest:
                         // this is the default...
                         break;
-                    case MongoAuthenticationType.Gssapi:
-                        query.Append("authType=GSSAPI;");
+                    case MongoAuthenticationProtocol.Gssapi:
+                        query.Append("authProtocol=GSSAPI;");
                         break;
                     default:
-                        throw new NotSupportedException(string.Format("Unknown MongoAuthenticationType {0}", _credentials.AuthenticationType));
+                        throw new NotSupportedException(string.Format("Unknown MongoAuthenticationProtocol {0}", _credentials.Protocol));
+                }
+
+                if (_credentials.Source != _databaseName)
+                {
+                    if (_credentials.Source != "admin" || _databaseName != null)
+                    {
+                        query.AppendFormat("authSource={0};", _credentials.Source);
+                    }
                 }
             }
             if (_ipv6)

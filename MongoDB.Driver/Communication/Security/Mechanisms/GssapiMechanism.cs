@@ -31,7 +31,7 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
         /// <exception cref="System.NotImplementedException"></exception>
         public bool CanUse(MongoCredentials credentials)
         {
-            return credentials.AuthenticationType == MongoAuthenticationType.Gssapi;
+            return credentials.Protocol == MongoAuthenticationProtocol.Gssapi;
         }
 
         /// <summary>

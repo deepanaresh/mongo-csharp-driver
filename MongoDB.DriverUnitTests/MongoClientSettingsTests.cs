@@ -151,11 +151,11 @@ namespace MongoDB.DriverUnitTests
 
             clone = settings.Clone();
             clone.CredentialsStore = new MongoCredentialsStore();
-            clone.CredentialsStore.AddCredentials("db2", new MongoCredentials("user2", "password2"));
+            clone.CredentialsStore.Add(MongoCredentials.Negotiate("db2", "user2", "password2"));
             Assert.IsFalse(clone.Equals(settings));
 
             clone = settings.Clone();
-            clone.DefaultCredentials = new MongoCredentials("user2", "password2");
+            clone.CredentialsStore.Add(MongoCredentials.Negotiate("db", "user2", "password2"));
             Assert.IsFalse(clone.Equals(settings));
 
             clone = settings.Clone();
@@ -262,8 +262,10 @@ namespace MongoDB.DriverUnitTests
             var settings = MongoClientSettings.FromConnectionStringBuilder(builder);
             Assert.AreEqual(builder.ConnectionMode, settings.ConnectionMode);
             Assert.AreEqual(builder.ConnectTimeout, settings.ConnectTimeout);
-            Assert.AreEqual("{}", settings.CredentialsStore.ToString());
-            Assert.AreEqual(new MongoCredentials("user1", "password1"), settings.DefaultCredentials);
+            Assert.AreEqual(1, settings.CredentialsStore.Count);
+            Assert.AreEqual(builder.Username, settings.CredentialsStore.Single().Username);
+            Assert.AreEqual("test", settings.CredentialsStore.Single().Source);
+            Assert.AreEqual(builder.Password, ((PasswordEvidence)settings.CredentialsStore.Single().Evidence).Password);
             Assert.AreEqual(builder.GuidRepresentation, settings.GuidRepresentation);
             Assert.AreEqual(builder.IPv6, settings.IPv6);
             Assert.AreEqual(builder.MaxConnectionIdleTime, settings.MaxConnectionIdleTime);
@@ -299,8 +301,10 @@ namespace MongoDB.DriverUnitTests
             var settings = MongoClientSettings.FromUrl(url);
             Assert.AreEqual(url.ConnectionMode, settings.ConnectionMode);
             Assert.AreEqual(url.ConnectTimeout, settings.ConnectTimeout);
-            Assert.AreEqual("{}", settings.CredentialsStore.ToString());
-            Assert.AreEqual(url.DefaultCredentials, settings.DefaultCredentials);
+            Assert.AreEqual(1, settings.CredentialsStore.Count);
+            Assert.AreEqual(url.Credentials.Username, settings.CredentialsStore.Single().Username);
+            Assert.AreEqual(url.Credentials.Source, settings.CredentialsStore.Single().Source);
+            Assert.AreEqual(((PasswordEvidence)url.Credentials.Evidence).Password, ((PasswordEvidence)settings.CredentialsStore.Single().Evidence).Password);
             Assert.AreEqual(url.GuidRepresentation, settings.GuidRepresentation);
             Assert.AreEqual(url.IPv6, settings.IPv6);
             Assert.AreEqual(url.MaxConnectionIdleTime, settings.MaxConnectionIdleTime);

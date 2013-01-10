@@ -204,9 +204,27 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
+        /// Gets or sets the credentials store.
+        /// </summary>
+        public MongoCredentialsStore CredentialsStore
+        {
+            get { return _credentialsStore; }
+            set
+            {
+                if (_isFrozen) { throw new InvalidOperationException("MongoClientSettings is frozen."); }
+                if (value == null)
+                {
+                    throw new ArgumentNullException("value");
+                }
+                _credentialsStore = value;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the default credentials.
         /// </summary>
-        public MongoCredentials Credentials
+        [Obsolete("Use CredentialsStore instead.")]
+        public MongoCredentials DefaultCredentials
         {
             get
             {
@@ -232,33 +250,6 @@ namespace MongoDB.Driver
                     _credentialsStore.Add(value);
                 }
             }
-        }
-
-        /// <summary>
-        /// Gets or sets the credentials store.
-        /// </summary>
-        public MongoCredentialsStore CredentialsStore
-        {
-            get { return _credentialsStore; }
-            set
-            {
-                if (_isFrozen) { throw new InvalidOperationException("MongoClientSettings is frozen."); }
-                if (value == null)
-                {
-                    throw new ArgumentNullException("value");
-                }
-                _credentialsStore = value;
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the default credentials.
-        /// </summary>
-        [Obsolete("Use Credentials instead.")]
-        public MongoCredentials DefaultCredentials
-        {
-            get { return Credentials; }
-            set { Credentials = value; }
         }
 
         /// <summary>
@@ -638,7 +629,7 @@ namespace MongoDB.Driver
             serverSettings.ConnectionMode = url.ConnectionMode;
             serverSettings.ConnectTimeout = url.ConnectTimeout;
             serverSettings.CredentialsStore = new MongoCredentialsStore();
-            serverSettings.DefaultCredentials = url.DefaultCredentials;
+            serverSettings.DefaultCredentials = url.Credentials;
             serverSettings.GuidRepresentation = url.GuidRepresentation;
             serverSettings.IPv6 = url.IPv6;
             serverSettings.MaxConnectionIdleTime = url.MaxConnectionIdleTime;
