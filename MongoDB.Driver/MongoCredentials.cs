@@ -15,6 +15,8 @@
 
 using System;
 using System.Linq;
+using System.Security;
+using System.Security.Principal;
 
 namespace MongoDB.Driver
 {
@@ -209,6 +211,78 @@ namespace MongoDB.Driver
         public static bool operator !=(MongoCredentials lhs, MongoCredentials rhs)
         {
             return !(lhs == rhs);
+        }
+
+        // public static methods
+        /// <summary>
+        /// Creates GSSAPI credentials.
+        /// </summary>
+        /// <returns>Credentials for GSSAPI.</returns>
+        public static MongoCredentials Gssapi()
+        {
+            var username = string.Format("{0}@{1}", Environment.UserName, Environment.UserDomainName);
+            return new MongoCredentials(
+                MongoAuthenticationType.Gssapi,
+                new MongoExternalIdentity(username),
+                new ProcessEvidence());
+        }
+
+        /// <summary>
+        /// Creates GSSAPI credentials.
+        /// </summary>
+        /// <param name="username">The username.</param>
+        /// <param name="password">The password.</param>
+        /// <returns>Credentials for GSSAPI.</returns>
+        public static MongoCredentials Gssapi(string username, string password)
+        {
+            return new MongoCredentials(
+                MongoAuthenticationType.Gssapi,
+                new MongoExternalIdentity(username),
+                new PasswordEvidence(password));
+        }
+
+        /// <summary>
+        /// Creates GSSAPI credentials.
+        /// </summary>
+        /// <param name="username">The username.</param>
+        /// <param name="password">The password.</param>
+        /// <returns>Credentials for GSSAPI.</returns>
+        public static MongoCredentials Gssapi(string username, SecureString password)
+        {
+            return new MongoCredentials(
+                MongoAuthenticationType.Gssapi,
+                new MongoExternalIdentity(username),
+                new PasswordEvidence(password));
+        }
+
+        /// <summary>
+        /// Creates credentials used in negotiated authentication.
+        /// </summary>
+        /// <param name="databaseName">Name of the database.</param>
+        /// <param name="username">The username.</param>
+        /// <param name="password">The password.</param>
+        /// <returns></returns>
+        public static MongoCredentials Negotiate(string databaseName, string username, string password)
+        {
+            return new MongoCredentials(
+                MongoAuthenticationType.Negotiate,
+                new MongoInternalIdentity(databaseName, username),
+                new PasswordEvidence(password));
+        }
+
+        /// <summary>
+        /// Creates credentials used in negotiated authentication.
+        /// </summary>
+        /// <param name="databaseName">Name of the database.</param>
+        /// <param name="username">The username.</param>
+        /// <param name="password">The password.</param>
+        /// <returns></returns>
+        public static MongoCredentials Negotiate(string databaseName, string username, SecureString password)
+        {
+            return new MongoCredentials(
+                MongoAuthenticationType.Negotiate,
+                new MongoInternalIdentity(databaseName, username),
+                new PasswordEvidence(password));
         }
 
         // public methods

@@ -30,16 +30,15 @@ namespace MongoDB.Driver
     [Serializable]
     public class MongoUrlBuilder
     {
-        private const string AUTH_TYPE_DEFAULT = "MONGO-CR";
+        private const string AUTH_TYPE_DEFAULT = "NEGOTIATE";
 
         // private fields
         private ConnectionMode _connectionMode;
         private TimeSpan _connectTimeout;
+        private MongoCredentials _credentials;
         private string _databaseName;
-        private MongoCredentials _defaultCredentials;
         private bool? _fsync;
         private GuidRepresentation _guidRepresentation;
-        private MongoClientIdentity _identity;
         private bool _ipv6;
         private bool? _journal;
         private TimeSpan _maxConnectionIdleTime;
@@ -68,11 +67,10 @@ namespace MongoDB.Driver
         {
             _connectionMode = ConnectionMode.Automatic;
             _connectTimeout = MongoDefaults.ConnectTimeout;
+            _credentials = null;
             _databaseName = null;
-            _defaultCredentials = null;
             _fsync = null;
             _guidRepresentation = MongoDefaults.GuidRepresentation;
-            _identity = null;
             _ipv6 = false;
             _journal = null;
             _maxConnectionIdleTime = MongoDefaults.MaxConnectionIdleTime;
@@ -149,21 +147,51 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
+        /// Gets or sets the credentials.
+        /// </summary>
+        public MongoCredentials Credentials
+        {
+            get { return _credentials; }
+            set
+            {
+                if (value != null)
+                {
+                    if (_databaseName != null && value.Source != _databaseName)
+                    {
+                        throw new ArgumentException("Credentials Source must be the same as the DatabaseName.");
+                    }
+
+                    _databaseName = value.Source;
+                }
+
+                _credentials = value;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the optional database name.
         /// </summary>
         public string DatabaseName
         {
             get { return _databaseName; }
-            set { _databaseName = value; }
+            set
+            {
+                if (_credentials != null && _credentials.Source != value)
+                {
+                    throw new ArgumentException("DatabaseName must be the same as the Credentials Source.");
+                }
+                _databaseName = value;
+            }
         }
 
         /// <summary>
         /// Gets or sets the default credentials.
         /// </summary>
+        [Obsolete("Use Credentials instead.")]
         public MongoCredentials DefaultCredentials
         {
-            get { return _defaultCredentials; }
-            set { _defaultCredentials = value; }
+            get { return Credentials; }
+            set { Credentials = value; }
         }
 
         /// <summary>
@@ -185,15 +213,6 @@ namespace MongoDB.Driver
         {
             get { return _guidRepresentation; }
             set { _guidRepresentation = value; }
-        }
-
-        /// <summary>
-        /// Gets or sets the identity.
-        /// </summary>
-        public MongoClientIdentity Identity
-        {
-            get { return _identity; }
-            set { _identity = value; }
         }
 
         /// <summary>
@@ -921,21 +940,14 @@ namespace MongoDB.Driver
             authType = authType ?? AUTH_TYPE_DEFAULT;
             switch (authType.ToLower())
             {
-                case "mongo-cr":
-                    _defaultCredentials = null;
-                    if (!string.IsNullOrEmpty(username))
-                    {
-                        _defaultCredentials = new MongoCredentials(username, password);
-                    }
-                    break;
                 case "gssapi":
                     if (!string.IsNullOrEmpty(username))
                     {
-                        _identity = MongoClientIdentity.Gssapi(username, password);
+                        _credentials = MongoCredentials.Gssapi(username, password);
                     }
                     else
                     {
-                        _identity = MongoClientIdentity.System;
+                        _credentials = MongoCredentials.Gssapi();
                     }
                     break;
                 case "negotiate":
@@ -943,10 +955,10 @@ namespace MongoDB.Driver
                     {
                         throw new FormatException("NEGOTIATE credentials must be specified in conjunction with a databaseName.");
                     }
-                    _identity = MongoClientIdentity.Negotiate(username, password, databaseName);
+                    _credentials = MongoCredentials.Negotiate(databaseName, username, password);
                     break;
                 default:
-                    var message = string.Format("{0} is not a valid authType value. MONGO-CR, GSSAPI, and NEGOTIATE are the only valid authType values.", authType);
+                    var message = string.Format("{0} is not a valid authType value. GSSAPI, and NEGOTIATE are the only valid authType values.", authType);
                     throw new ArgumentException(message);
             }
         }
@@ -978,17 +990,9 @@ namespace MongoDB.Driver
         {
             StringBuilder url = new StringBuilder();
             url.Append("mongodb://");
-            if (_defaultCredentials != null)
+            if (_credentials != null && _credentials.AuthenticationType == MongoAuthenticationType.Negotiate)
             {
-                url.AppendFormat("{0}:{1}@", Uri.EscapeDataString(_defaultCredentials.Username), Uri.EscapeDataString(_defaultCredentials.Password));
-            }
-            else if (_identity != null && _identity != MongoClientIdentity.System)
-            {
-                url.Append(Uri.EscapeDataString(_identity.Username));
-                if (_identity.HasPassword)
-                {
-                    url.Append(":<password>");
-                }
+                url.AppendFormat("{0}:******@", Uri.EscapeDataString(_credentials.Username));
             }
             if (_servers != null)
             {
@@ -1007,24 +1011,24 @@ namespace MongoDB.Driver
                     firstServer = false;
                 }
             }
-            if (_databaseName != null || _identity != null && _identity.AuthenticationType == MongoAuthenticationType.Negotiate)
+            if (_databaseName != null)
             {
                 url.Append("/");
-                url.Append(_databaseName ?? _identity.Source);
+                url.Append(_databaseName);
             }
             var query = new StringBuilder();
-            if (_identity != null)
+            if (_credentials != null)
             {
-                switch (_identity.AuthenticationType)
+                switch (_credentials.AuthenticationType)
                 {
+                    case MongoAuthenticationType.Negotiate:
+                        // this is the default...
+                        break;
                     case MongoAuthenticationType.Gssapi:
                         query.Append("authType=GSSAPI;");
                         break;
-                    case MongoAuthenticationType.Negotiate:
-                        query.Append("authType=NEGOTIATE");
-                        break;
                     default:
-                        throw new NotSupportedException(string.Format("Unknown MongoAuthenticationType {0}", _identity.AuthenticationType));
+                        throw new NotSupportedException(string.Format("Unknown MongoAuthenticationType {0}", _credentials.AuthenticationType));
                 }
             }
             if (_ipv6)

@@ -31,7 +31,6 @@ namespace MongoDB.Driver
         private ConnectionMode _connectionMode;
         private TimeSpan _connectTimeout;
         private MongoCredentialsStore _credentialsStore;
-        private MongoCredentials _defaultCredentials;
         private MongoClientIdentity _identity;
         private GuidRepresentation _guidRepresentation;
         private bool _ipv6;
@@ -64,7 +63,6 @@ namespace MongoDB.Driver
             _connectionMode = ConnectionMode.Automatic;
             _connectTimeout = MongoDefaults.ConnectTimeout;
             _credentialsStore = new MongoCredentialsStore();
-            _defaultCredentials = null;
             _identity = null;
             _guidRepresentation = MongoDefaults.GuidRepresentation;
             _ipv6 = false;
@@ -112,6 +110,37 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
+        /// Gets or sets the default credentials.
+        /// </summary>
+        public MongoCredentials Credentials
+        {
+            get 
+            {
+                if (_credentialsStore.Count == 0)
+                {
+                    return null;
+                }
+                else if (_credentialsStore.Count == 1)
+                {
+                    return _credentialsStore.Single();
+                }
+                else
+                {
+                    throw new InvalidOperationException("There are multiple credentials. Use CredentialsStore instead.");
+                }
+            }
+            set
+            {
+                if (_isFrozen) { throw new InvalidOperationException("MongoClientSettings is frozen."); }
+                _credentialsStore = new MongoCredentialsStore();
+                if (value != null)
+                {
+                    _credentialsStore.Add(value);
+                }
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the credentials store.
         /// </summary>
         public MongoCredentialsStore CredentialsStore
@@ -131,14 +160,11 @@ namespace MongoDB.Driver
         /// <summary>
         /// Gets or sets the default credentials.
         /// </summary>
+        [Obsolete("Use Credentials instead.")]
         public MongoCredentials DefaultCredentials
         {
-            get { return _defaultCredentials; }
-            set
-            {
-                if (_isFrozen) { throw new InvalidOperationException("MongoClientSettings is frozen."); }
-                _defaultCredentials = value;
-            }
+            get { return Credentials; }
+            set { Credentials = value; }
         }
 
         /// <summary>
@@ -451,7 +477,6 @@ namespace MongoDB.Driver
             clientSettings.CredentialsStore = new MongoCredentialsStore();
             clientSettings.DefaultCredentials = url.DefaultCredentials;
             clientSettings.GuidRepresentation = url.GuidRepresentation;
-            clientSettings.Identity = url.Identity;
             clientSettings.IPv6 = url.IPv6;
             clientSettings.MaxConnectionIdleTime = url.MaxConnectionIdleTime;
             clientSettings.MaxConnectionLifeTime = url.MaxConnectionLifeTime;
@@ -481,7 +506,6 @@ namespace MongoDB.Driver
             clone._connectionMode = _connectionMode;
             clone._connectTimeout = _connectTimeout;
             clone._credentialsStore = _credentialsStore.Clone();
-            clone._defaultCredentials = _defaultCredentials;
             clone._guidRepresentation = _guidRepresentation;
             clone._identity = _identity;
             clone._ipv6 = _ipv6;
@@ -526,7 +550,6 @@ namespace MongoDB.Driver
                         _connectionMode == rhs._connectionMode &&
                         _connectTimeout == rhs._connectTimeout &&
                         _credentialsStore.Equals(rhs._credentialsStore) &&
-                        _defaultCredentials == rhs._defaultCredentials &&
                         _guidRepresentation == rhs._guidRepresentation &&
                         _identity == rhs._identity &&
                         _ipv6 == rhs._ipv6 &&
@@ -598,7 +621,6 @@ namespace MongoDB.Driver
             hash = 37 * hash + _connectionMode.GetHashCode();
             hash = 37 * hash + _connectTimeout.GetHashCode();
             hash = 37 * hash + _credentialsStore.GetHashCode();
-            hash = 37 * hash + ((_defaultCredentials == null) ? 0 : _defaultCredentials.GetHashCode());
             hash = 37 * hash + _guidRepresentation.GetHashCode();
             hash = 37 * hash + ((_identity == null) ? 0 : _identity.GetHashCode());
             hash = 37 * hash + _ipv6.GetHashCode();
@@ -637,7 +659,6 @@ namespace MongoDB.Driver
             sb.AppendFormat("ConnectionMode={0};", _connectionMode);
             sb.AppendFormat("ConnectTimeout={0};", _connectTimeout);
             sb.AppendFormat("Credentials={{{0}}};", _credentialsStore);
-            sb.AppendFormat("DefaultCredentials={0};", _defaultCredentials);
             sb.AppendFormat("GuidRepresentation={0};", _guidRepresentation);
             sb.AppendFormat("Identity={0};", _identity);
             sb.AppendFormat("IPv6={0};", _ipv6);

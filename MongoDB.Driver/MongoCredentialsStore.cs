@@ -23,7 +23,7 @@ namespace MongoDB.Driver
     /// <summary>
     /// Represents a credentials store that contains credentials for different databases.
     /// </summary>
-    public class MongoCredentialsStore
+    public class MongoCredentialsStore : IEnumerable<MongoCredentials>
     {
         // private fields
         private Dictionary<string, MongoCredentials> _credentialsStore = new Dictionary<string,MongoCredentials>();
@@ -41,6 +41,13 @@ namespace MongoDB.Driver
 
         // public properties
         /// <summary>
+        /// Gets the number of credentials in the store.
+        /// </summary>
+        public int Count
+        {
+            get { return _credentialsStore.Count; }
+        }
+        /// <summary>
         /// Gets whether the credentials store has been frozen to prevent further changes.
         /// </summary>
         public bool IsFrozen
@@ -50,10 +57,24 @@ namespace MongoDB.Driver
 
         // public methods
         /// <summary>
+        /// Adds the specified credentials.
+        /// </summary>
+        /// <param name="credentials">The credentials.</param>
+        public void Add(MongoCredentials credentials)
+        {
+            if (credentials == null)
+            {
+                throw new ArgumentNullException("credentials");
+            }
+            _credentialsStore.Add(credentials.Source, credentials);
+        }
+
+        /// <summary>
         /// Adds the credentials for a database to the store.
         /// </summary>
         /// <param name="databaseName">The database name.</param>
         /// <param name="credentials">The credentials.</param>
+        [Obsolete("Use Add instead.")]
         public void AddCredentials(string databaseName, MongoCredentials credentials)
         {
             if (_isFrozen) { throw new InvalidOperationException("MongoCredentialsStore is frozen."); }
@@ -65,9 +86,9 @@ namespace MongoDB.Driver
             {
                 throw new ArgumentNullException("credentials");
             }
-            if (databaseName == "admin" && !credentials.Admin)
+            if (databaseName != credentials.Source)
             {
-                throw new ArgumentOutOfRangeException("credentials", "Credentials for the admin database must have the admin flag set to true.");
+                throw new ArgumentException("databaseName must be the same as the credentials source.", "databaseName");
             }
             _credentialsStore.Add(databaseName, credentials);
         }
@@ -143,6 +164,15 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
+        /// Gets the enumerator.
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerator<MongoCredentials> GetEnumerator()
+        {
+            return _credentialsStore.Values.GetEnumerator();
+        }
+
+        /// <summary>
         /// Gets the hashcode for the credentials store.
         /// </summary>
         /// <returns>The hashcode.</returns>
@@ -205,6 +235,18 @@ namespace MongoDB.Driver
                 throw new ArgumentNullException("databaseName");
             }
             return _credentialsStore.TryGetValue(databaseName, out credentials);
+        }
+
+        // explicit methods
+        /// <summary>
+        /// Returns an enumerator that iterates through a collection.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="T:System.Collections.IEnumerator" /> object that can be used to iterate through the collection.
+        /// </returns>
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return _credentialsStore.Values.GetEnumerator();
         }
     }
 }

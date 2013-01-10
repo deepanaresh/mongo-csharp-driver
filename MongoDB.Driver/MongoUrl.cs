@@ -57,11 +57,10 @@ namespace MongoDB.Driver
         // private fields
         private readonly ConnectionMode _connectionMode;
         private readonly TimeSpan _connectTimeout;
+        private readonly MongoCredentials _credentials;
         private readonly string _databaseName;
-        private readonly MongoCredentials _defaultCredentials;
         private readonly bool? _fsync;
         private readonly GuidRepresentation _guidRepresentation;
-        private readonly MongoClientIdentity _identity;
         private readonly bool _ipv6;
         private readonly bool? _journal;
         private readonly TimeSpan _maxConnectionIdleTime;
@@ -94,10 +93,9 @@ namespace MongoDB.Driver
             _connectionMode = builder.ConnectionMode;
             _connectTimeout = builder.ConnectTimeout;
             _databaseName = builder.DatabaseName;
-            _defaultCredentials = builder.DefaultCredentials;
+            _credentials = builder.Credentials;
             _fsync = builder.FSync;
             _guidRepresentation = builder.GuidRepresentation;
-            _identity = builder.Identity;
             _ipv6 = builder.IPv6;
             _journal = builder.Journal;
             _maxConnectionIdleTime = builder.MaxConnectionIdleTime;
@@ -170,7 +168,7 @@ namespace MongoDB.Driver
         /// </summary>
         public MongoCredentials DefaultCredentials
         {
-            get { return _defaultCredentials; }
+            get { return _credentials; }
         }
 
         /// <summary>
@@ -187,14 +185,6 @@ namespace MongoDB.Driver
         public GuidRepresentation GuidRepresentation
         {
             get { return _guidRepresentation; }
-        }
-
-        /// <summary>
-        /// Gets the identity.
-        /// </summary>
-        public MongoClientIdentity Identity
-        {
-            get { return _identity; }
         }
 
         /// <summary>
