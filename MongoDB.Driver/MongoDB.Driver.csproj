@@ -118,7 +118,6 @@
     <Compile Include="Communication\Security\Mechanisms\Gsasl\GsaslProperty.cs" />
     <Compile Include="Communication\Security\Mechanisms\Gsasl\GsaslSession.cs" />
     <Compile Include="Communication\Security\ISaslStep.cs" />
-    <Compile Include="Communication\Security\MongoConnection.cs" />
     <Compile Include="Communication\Security\MongoCRAuthenticator.cs" />
     <Compile Include="Communication\Security\Mechanisms\AbstractGsaslImplementation.cs" />
     <Compile Include="Communication\Security\Mechanisms\GsaslGssapiImplementation.cs" />

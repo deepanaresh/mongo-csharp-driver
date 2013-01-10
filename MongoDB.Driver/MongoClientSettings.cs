@@ -421,7 +421,10 @@ namespace MongoDB.Driver
             clientSettings.ConnectionMode = builder.ConnectionMode;
             clientSettings.ConnectTimeout = builder.ConnectTimeout;
             clientSettings.CredentialsStore = new MongoCredentialsStore();
-            clientSettings.CredentialsStore.Add(credentials);
+            if (credentials != null)
+            {
+                clientSettings.CredentialsStore.Add(credentials);
+            }
             clientSettings.GuidRepresentation = builder.GuidRepresentation;
             clientSettings.IPv6 = builder.IPv6;
             clientSettings.MaxConnectionIdleTime = builder.MaxConnectionIdleTime;
@@ -452,7 +455,10 @@ namespace MongoDB.Driver
             clientSettings.ConnectionMode = url.ConnectionMode;
             clientSettings.ConnectTimeout = url.ConnectTimeout;
             clientSettings.CredentialsStore = new MongoCredentialsStore();
-            clientSettings.CredentialsStore.Add(url.Credentials);
+            if (url.Credentials != null)
+            {
+                clientSettings.CredentialsStore.Add(url.Credentials);
+            }
             clientSettings.GuidRepresentation = url.GuidRepresentation;
             clientSettings.IPv6 = url.IPv6;
             clientSettings.MaxConnectionIdleTime = url.MaxConnectionIdleTime;

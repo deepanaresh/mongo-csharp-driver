@@ -316,7 +316,7 @@ namespace MongoDB.DriverUnitTests
             Assert.AreEqual(builder.ConnectTimeout, settings.ConnectTimeout);
             Assert.AreEqual(1, settings.CredentialsStore.Count);
             Assert.AreEqual(builder.Username, settings.CredentialsStore.Single().Username);
-            Assert.AreEqual("test", settings.CredentialsStore.Single().Source);
+            Assert.AreEqual("admin", settings.CredentialsStore.Single().Source);
             Assert.AreEqual(builder.Password, ((PasswordEvidence)settings.CredentialsStore.Single().Evidence).Password);
             Assert.AreEqual(builder.GuidRepresentation, settings.GuidRepresentation);
             Assert.AreEqual(builder.IPv6, settings.IPv6);
