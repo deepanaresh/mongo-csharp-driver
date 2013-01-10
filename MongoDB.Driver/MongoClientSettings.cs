@@ -410,17 +410,18 @@ namespace MongoDB.Driver
         /// <returns>A MongoClientSettings.</returns>
         public static MongoClientSettings FromConnectionStringBuilder(MongoConnectionStringBuilder builder)
         {
-            MongoCredentials defaultCredentials = null;
+            MongoCredentials credentials = null;
             if (builder.Username != null && builder.Password != null)
             {
-                defaultCredentials = new MongoCredentials(builder.Username, builder.Password);
+                var databaseName = builder.DatabaseName ?? "admin";
+                credentials = MongoCredentials.Negotiate(databaseName, builder.Username, builder.Password);
             }
 
             var clientSettings = new MongoClientSettings();
             clientSettings.ConnectionMode = builder.ConnectionMode;
             clientSettings.ConnectTimeout = builder.ConnectTimeout;
             clientSettings.CredentialsStore = new MongoCredentialsStore();
-            clientSettings.DefaultCredentials = defaultCredentials;
+            clientSettings.CredentialsStore.Add(credentials);
             clientSettings.GuidRepresentation = builder.GuidRepresentation;
             clientSettings.IPv6 = builder.IPv6;
             clientSettings.MaxConnectionIdleTime = builder.MaxConnectionIdleTime;
@@ -451,7 +452,7 @@ namespace MongoDB.Driver
             clientSettings.ConnectionMode = url.ConnectionMode;
             clientSettings.ConnectTimeout = url.ConnectTimeout;
             clientSettings.CredentialsStore = new MongoCredentialsStore();
-            clientSettings.DefaultCredentials = url.Credentials;
+            clientSettings.CredentialsStore.Add(url.Credentials);
             clientSettings.GuidRepresentation = url.GuidRepresentation;
             clientSettings.IPv6 = url.IPv6;
             clientSettings.MaxConnectionIdleTime = url.MaxConnectionIdleTime;

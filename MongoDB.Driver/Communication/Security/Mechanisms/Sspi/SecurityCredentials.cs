@@ -40,7 +40,8 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms.Sspi
         /// Acquires the credentials handle.
         /// </summary>
         /// <param name="package">The package.</param>
-        /// <param name="identity">The identity.</param>
+        /// <param name="username">The username.</param>
+        /// <param name="evidence">The evidence.</param>
         /// <returns>A security credential.</returns>
         public static SecurityCredentials Acquire(SspiPackage package, string username, MongoIdentityEvidence evidence)
         {

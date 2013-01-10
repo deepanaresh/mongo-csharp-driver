@@ -102,7 +102,7 @@ namespace MongoDB.Driver
             var clone = new MongoCredentialsStore();
             foreach (var item in _credentialsStore)
             {
-                clone.AddCredentials(item.Key, item.Value);
+                clone.Add(item.Value);
             }
             return clone;
         }

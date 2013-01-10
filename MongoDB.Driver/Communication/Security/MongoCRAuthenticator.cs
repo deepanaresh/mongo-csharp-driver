@@ -13,7 +13,7 @@ namespace MongoDB.Driver.Communication.Security
         /// <summary>
         /// Authenticates the connection against the given database.
         /// </summary>
-        /// <param name="databaseName">Name of the database.</param>
+        /// <param name="connection">The connection.</param>
         /// <param name="credentials">The credentials.</param>
         public void Authenticate(MongoConnection connection, MongoCredentials credentials)
         {

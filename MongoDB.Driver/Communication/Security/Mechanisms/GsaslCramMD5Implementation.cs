@@ -19,7 +19,8 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
         /// <summary>
         /// Initializes a new instance of the <see cref="GsaslCramMD5Implementation" /> class.
         /// </summary>
-        /// <param name="identity">The identity.</param>
+        /// <param name="username">The username.</param>
+        /// <param name="password">The password.</param>
         public GsaslCramMD5Implementation(string username, PasswordEvidence password)
             : base("CRAM-MD5", new byte[0])
         {

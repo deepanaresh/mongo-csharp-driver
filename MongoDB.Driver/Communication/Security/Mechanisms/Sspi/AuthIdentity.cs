@@ -25,7 +25,8 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms.Sspi
         /// <summary>
         /// Initializes a new instance of the <see cref="AuthIdentity" /> struct.
         /// </summary>
-        /// <param name="identity">The identity.</param>
+        /// <param name="username">The username.</param>
+        /// <param name="password">The password.</param>
         public AuthIdentity(string username, SecureString password)
         {
             Username = null;

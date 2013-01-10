@@ -94,7 +94,7 @@ namespace MongoDB.Driver
         /// <summary>
         /// Determines whether the specified instance is equal to this instance.
         /// </summary>
-        /// <param name="obj">The instance to compare with this instance.</param>
+        /// <param name="rhs">The right-hand side.</param>
         /// <returns>
         ///   <c>true</c> if the specified instance is equal to this instance; otherwise, <c>false</c>.
         /// </returns>

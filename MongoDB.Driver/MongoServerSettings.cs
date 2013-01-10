@@ -569,17 +569,18 @@ namespace MongoDB.Driver
         /// <returns>A MongoServerSettings.</returns>
         public static MongoServerSettings FromConnectionStringBuilder(MongoConnectionStringBuilder builder)
         {
-            MongoCredentials defaultCredentials = null;
+            MongoCredentials credentials = null;
             if (builder.Username != null && builder.Password != null)
             {
-                defaultCredentials = new MongoCredentials(builder.Username, builder.Password);
+                var databaseName = builder.DatabaseName ?? "admin";
+                credentials = MongoCredentials.Negotiate(databaseName, builder.Username, builder.Password);
             }
 
             var serverSettings = new MongoServerSettings();
             serverSettings.ConnectionMode = builder.ConnectionMode;
             serverSettings.ConnectTimeout = builder.ConnectTimeout;
             serverSettings.CredentialsStore = new MongoCredentialsStore();
-            serverSettings.DefaultCredentials = defaultCredentials;
+            serverSettings.DefaultCredentials = credentials;
             serverSettings.GuidRepresentation = builder.GuidRepresentation;
             serverSettings.IPv6 = builder.IPv6;
             serverSettings.MaxConnectionIdleTime = builder.MaxConnectionIdleTime;

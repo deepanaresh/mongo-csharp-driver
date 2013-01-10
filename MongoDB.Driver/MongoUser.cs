@@ -40,8 +40,12 @@ namespace MongoDB.Driver
             {
                 throw new ArgumentNullException("credentials");
             }
+            if (!(credentials.Evidence is PasswordEvidence))
+            {
+                throw new ArgumentException("Credentials must have password evidence to create a user.");
+            }
             _username = credentials.Username;
-            _passwordHash = HashPassword(credentials.Username, credentials.Password);
+            _passwordHash = HashPassword(credentials.Username, ((PasswordEvidence)credentials.Evidence).Password);
             _isReadOnly = isReadOnly;
         }
 

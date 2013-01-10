@@ -375,13 +375,12 @@ namespace MongoDB.Driver
         /// <summary>
         /// Acquires the connection.
         /// </summary>
-        /// <param name="databaseName">Name of the database.</param>
-        /// <param name="credentials">The credentials.</param>
-        /// <returns>A MongoConnection.</returns>
+        /// <returns>
+        /// A MongoConnection.
+        /// </returns>
         /// <exception cref="System.InvalidOperationException"></exception>
         internal MongoConnection AcquireConnection()
         {
-            MongoConnection connection;
             lock (_serverInstanceLock)
             {
                 if (_state != MongoServerState.Connected)

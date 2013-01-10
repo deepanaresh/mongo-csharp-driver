@@ -62,7 +62,6 @@ namespace MongoDB.Driver.Internal
         private DateTime _lastUsedAt; // set every time the connection is Released
         private int _messageCounter;
         private int _requestId;
-        private Authenticator _authenticator;
 
         // constructors
         internal MongoConnection(MongoConnectionPool connectionPool)

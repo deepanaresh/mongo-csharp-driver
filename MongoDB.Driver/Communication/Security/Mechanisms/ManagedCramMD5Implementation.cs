@@ -19,7 +19,8 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
         /// <summary>
         /// Initializes a new instance of the <see cref="ManagedCramMD5Implementation" /> class.
         /// </summary>
-        /// <param name="identity">The identity.</param>
+        /// <param name="username">The username.</param>
+        /// <param name="password">The password.</param>
         public ManagedCramMD5Implementation(string username, string password)
         {
             _username = username;
