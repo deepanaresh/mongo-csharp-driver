@@ -31,7 +31,6 @@ namespace MongoDB.Driver
         private ConnectionMode _connectionMode;
         private TimeSpan _connectTimeout;
         private MongoCredentialsStore _credentialsStore;
-        private MongoClientIdentity _identity;
         private GuidRepresentation _guidRepresentation;
         private bool _ipv6;
         private TimeSpan _maxConnectionIdleTime;
@@ -63,7 +62,6 @@ namespace MongoDB.Driver
             _connectionMode = ConnectionMode.Automatic;
             _connectTimeout = MongoDefaults.ConnectTimeout;
             _credentialsStore = new MongoCredentialsStore();
-            _identity = null;
             _guidRepresentation = MongoDefaults.GuidRepresentation;
             _ipv6 = false;
             _maxConnectionIdleTime = MongoDefaults.MaxConnectionIdleTime;
@@ -168,19 +166,6 @@ namespace MongoDB.Driver
             {
                 if (_isFrozen) { throw new InvalidOperationException("MongoClientSettings is frozen."); }
                 _guidRepresentation = value;
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the identity used to communicate with MongoDB.
-        /// </summary>
-        public MongoClientIdentity Identity
-        {
-            get { return _identity; }
-            set
-            {
-                if (_isFrozen) { throw new InvalidOperationException("MongoClientSettings is frozen."); }
-                _identity = value;
             }
         }
 
@@ -498,7 +483,6 @@ namespace MongoDB.Driver
             clone._connectTimeout = _connectTimeout;
             clone._credentialsStore = _credentialsStore.Clone();
             clone._guidRepresentation = _guidRepresentation;
-            clone._identity = _identity;
             clone._ipv6 = _ipv6;
             clone._maxConnectionIdleTime = _maxConnectionIdleTime;
             clone._maxConnectionLifeTime = _maxConnectionLifeTime;
@@ -542,7 +526,6 @@ namespace MongoDB.Driver
                         _connectTimeout == rhs._connectTimeout &&
                         _credentialsStore.Equals(rhs._credentialsStore) &&
                         _guidRepresentation == rhs._guidRepresentation &&
-                        _identity == rhs._identity &&
                         _ipv6 == rhs._ipv6 &&
                         _maxConnectionIdleTime == rhs._maxConnectionIdleTime &&
                         _maxConnectionLifeTime == rhs._maxConnectionLifeTime &&
@@ -613,7 +596,6 @@ namespace MongoDB.Driver
             hash = 37 * hash + _connectTimeout.GetHashCode();
             hash = 37 * hash + _credentialsStore.GetHashCode();
             hash = 37 * hash + _guidRepresentation.GetHashCode();
-            hash = 37 * hash + ((_identity == null) ? 0 : _identity.GetHashCode());
             hash = 37 * hash + _ipv6.GetHashCode();
             hash = 37 * hash + _maxConnectionIdleTime.GetHashCode();
             hash = 37 * hash + _maxConnectionLifeTime.GetHashCode();
@@ -651,7 +633,6 @@ namespace MongoDB.Driver
             sb.AppendFormat("ConnectTimeout={0};", _connectTimeout);
             sb.AppendFormat("Credentials={{{0}}};", _credentialsStore);
             sb.AppendFormat("GuidRepresentation={0};", _guidRepresentation);
-            sb.AppendFormat("Identity={0};", _identity);
             sb.AppendFormat("IPv6={0};", _ipv6);
             sb.AppendFormat("MaxConnectionIdleTime={0};", _maxConnectionIdleTime);
             sb.AppendFormat("MaxConnectionLifeTime={0};", _maxConnectionLifeTime);

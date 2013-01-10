@@ -12,17 +12,19 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
     internal class GsaslCramMD5Implementation : AbstractGsaslImplementation
     {
         // private fields
-        private readonly MongoClientIdentity _identity;
+        private readonly string _username;
+        private readonly PasswordEvidence _password;
 
         // constructors
         /// <summary>
         /// Initializes a new instance of the <see cref="GsaslCramMD5Implementation" /> class.
         /// </summary>
         /// <param name="identity">The identity.</param>
-        public GsaslCramMD5Implementation(MongoClientIdentity identity)
+        public GsaslCramMD5Implementation(string username, PasswordEvidence password)
             : base("CRAM-MD5", new byte[0])
         {
-            _identity = identity;
+            _username = username;
+            _password = password;
         }
 
         // protected methods
@@ -32,7 +34,7 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
         /// <returns>The properties.</returns>
         protected override IEnumerable<KeyValuePair<string, string>> GetProperties()
         {
-            yield return new KeyValuePair<string, string>("AUTHID", _identity.Username);
+            yield return new KeyValuePair<string, string>("AUTHID", _username);
             yield return new KeyValuePair<string, string>("PASSWORD", CreatePassword());
         }
 
@@ -41,7 +43,7 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
         {
             using(var md5 = MD5.Create())
             {
-                var bytes = GetMongoPassword(md5, Encoding.UTF8, _identity.Username, _identity.Password);
+                var bytes = GetMongoPassword(md5, Encoding.UTF8, _username, _password.Password);
                 return ToHexString(bytes);
             }
         }
