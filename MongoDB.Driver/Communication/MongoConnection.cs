@@ -21,6 +21,7 @@ using System.Security.Cryptography.X509Certificates;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
+using MongoDB.Driver.Communication;
 using MongoDB.Driver.Communication.Security;
 
 namespace MongoDB.Driver.Internal
@@ -50,7 +51,6 @@ namespace MongoDB.Driver.Internal
     public class MongoConnection
     {
         // private fields
-        private readonly IAuthenticationStore _authenticationStore;
         private object _connectionLock = new object();
         private MongoServerInstance _serverInstance;
         private MongoConnectionPool _connectionPool;
@@ -62,6 +62,7 @@ namespace MongoDB.Driver.Internal
         private DateTime _lastUsedAt; // set every time the connection is Released
         private int _messageCounter;
         private int _requestId;
+        private Authenticator _authenticator;
 
         // constructors
         internal MongoConnection(MongoConnectionPool connectionPool)
@@ -76,14 +77,6 @@ namespace MongoDB.Driver.Internal
             _serverInstance = serverInstance;
             _createdAt = DateTime.UtcNow;
             _state = MongoConnectionState.Initial;
-            if (serverInstance.Settings.DefaultCredentials != null)
-            {
-                _authenticationStore = new SaslAuthenticationStore(this, serverInstance.Settings.DefaultCredentials);
-            }
-            else
-            {
-                _authenticationStore = new LegacyAuthenticationStore(this);
-            }
         }
 
         // public properties
@@ -153,18 +146,6 @@ namespace MongoDB.Driver.Internal
         }
 
         // internal methods
-        internal void Authenticate(string databaseName, MongoCredentials credentials)
-        {
-            if (_state == MongoConnectionState.Closed) { throw new InvalidOperationException("Connection is closed."); }
-            _authenticationStore.Authenticate(databaseName, credentials);
-        }
-
-        internal bool CanAuthenticate(string databaseName, MongoCredentials credentials)
-        {
-            if (_state == MongoConnectionState.Closed) { throw new InvalidOperationException("Connection is closed."); }
-            return _authenticationStore.CanAuthenticate(databaseName, credentials);
-        }
-
         internal void Close()
         {
             lock (_connectionLock)
@@ -191,23 +172,11 @@ namespace MongoDB.Driver.Internal
             }
         }
 
-        internal bool IsAuthenticated(string databaseName, MongoCredentials credentials)
-        {
-            if (_state == MongoConnectionState.Closed) { throw new InvalidOperationException("Connection is closed."); }
-            return _authenticationStore.IsAuthenticated(databaseName, credentials);
-        }
-
         internal bool IsExpired()
         {
             var now = DateTime.UtcNow;
             return now > _createdAt + _serverInstance.Settings.MaxConnectionLifeTime
                 || now > _lastUsedAt + _serverInstance.Settings.MaxConnectionIdleTime;
-        }
-
-        internal void Logout(string databaseName)
-        {
-            if (_state == MongoConnectionState.Closed) { throw new InvalidOperationException("Connection is closed."); }
-            _authenticationStore.Logout(databaseName);
         }
 
         internal void Open()
@@ -255,6 +224,8 @@ namespace MongoDB.Driver.Internal
             _tcpClient = tcpClient;
             _stream = stream;
             _state = MongoConnectionState.Open;
+
+            new Authenticator(_serverInstance.Settings.CredentialsStore).Authenticate(this);
         }
 
         // this is a low level method that doesn't require a MongoServer

@@ -106,6 +106,7 @@
     <Compile Include="CommandResults\IsMasterResult.cs" />
     <Compile Include="CommandResults\SafeModeResult.cs" />
     <Compile Include="CommandResults\ValidateCollectionResult.cs" />
+    <Compile Include="Communication\Security\Authenticator.cs" />
     <Compile Include="Communication\MongoServerInstanceType.cs" />
     <Compile Include="Communication\Security\Mechanisms\AbstractImplementation.cs" />
     <Compile Include="Communication\Security\Mechanisms\CramMD5Mechanism.cs" />
@@ -116,9 +117,9 @@
     <Compile Include="Communication\Security\Mechanisms\Gsasl\GsaslException.cs" />
     <Compile Include="Communication\Security\Mechanisms\Gsasl\GsaslProperty.cs" />
     <Compile Include="Communication\Security\Mechanisms\Gsasl\GsaslSession.cs" />
-    <Compile Include="Communication\Security\IAuthenticationStore.cs" />
     <Compile Include="Communication\Security\ISaslStep.cs" />
-    <Compile Include="Communication\Security\LegacyAuthenticationStore.cs" />
+    <Compile Include="Communication\Security\MongoConnection.cs" />
+    <Compile Include="Communication\Security\MongoCRAuthenticator.cs" />
     <Compile Include="Communication\Security\Mechanisms\AbstractGsaslImplementation.cs" />
     <Compile Include="Communication\Security\Mechanisms\GsaslGssapiImplementation.cs" />
     <Compile Include="Communication\Security\Mechanisms\GssapiMechanism.cs" />
@@ -127,7 +128,7 @@
     <Compile Include="Communication\Security\Mechanisms\ManagedDigestMD5Implementation.cs" />
     <Compile Include="Communication\Security\Mechanisms\WindowsGssapiImplementation.cs" />
     <Compile Include="Communication\Security\MongoSecurityException.cs" />
-    <Compile Include="Communication\Security\SaslAuthenticationStore.cs" />
+    <Compile Include="Communication\Security\SaslAuthenticator.cs" />
     <Compile Include="Communication\Security\SaslCompletionStep.cs" />
     <Compile Include="Communication\Security\SaslConversation.cs" />
     <Compile Include="Communication\Security\Mechanisms\Sspi\AuthIdentity.cs" />

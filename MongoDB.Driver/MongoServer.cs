@@ -934,7 +934,7 @@ namespace MongoDB.Driver
             }
 
             var serverInstance = _serverProxy.ChooseServerInstance(readPreference);
-            var connection = serverInstance.AcquireConnection(initialDatabase.Name, initialDatabase.Credentials);
+            var connection = serverInstance.AcquireConnection();
 
             lock (_serverLock)
             {
@@ -970,7 +970,7 @@ namespace MongoDB.Driver
                 }
             }
 
-            var connection = serverInstance.AcquireConnection(initialDatabase.Name, initialDatabase.Credentials);
+            var connection = serverInstance.AcquireConnection();
 
             lock (_serverLock)
             {
@@ -1049,12 +1049,11 @@ namespace MongoDB.Driver
             // check authentication outside of lock
             if (requestConnection != null)
             {
-                requestConnection.Authenticate(database.Name, database.Credentials); // will throw exception if authentication fails
                 return requestConnection;
             }
 
             var serverInstance = _serverProxy.ChooseServerInstance(readPreference);
-            return serverInstance.AcquireConnection(database.Name, database.Credentials);
+            return serverInstance.AcquireConnection();
         }
 
         internal MongoConnection AcquireConnection(MongoDatabase database, MongoServerInstance serverInstance)
@@ -1078,14 +1077,12 @@ namespace MongoDB.Driver
                 }
             }
 
-            // check authentication outside of lock
             if (requestConnection != null)
             {
-                requestConnection.Authenticate(database.Name, database.Credentials); // will throw exception if authentication fails
                 return requestConnection;
             }
 
-            return serverInstance.AcquireConnection(database.Name, database.Credentials);
+            return serverInstance.AcquireConnection();
         }
 
         internal void ReleaseConnection(MongoConnection connection)
