@@ -907,7 +907,7 @@ namespace MongoDB.Driver
         }
 
         // internal methods
-        internal MongoConnection AcquireConnection(MongoDatabase database, ReadPreference readPreference)
+        internal MongoConnection AcquireConnection(ReadPreference readPreference)
         {
             MongoConnection requestConnection = null;
             lock (_serverLock)
@@ -935,7 +935,7 @@ namespace MongoDB.Driver
             return serverInstance.AcquireConnection();
         }
 
-        internal MongoConnection AcquireConnection(MongoDatabase database, MongoServerInstance serverInstance)
+        internal MongoConnection AcquireConnection(MongoServerInstance serverInstance)
         {
             MongoConnection requestConnection = null;
             lock (_serverLock)
