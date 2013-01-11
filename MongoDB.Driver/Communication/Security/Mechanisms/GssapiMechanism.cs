@@ -31,7 +31,8 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
         /// <exception cref="System.NotImplementedException"></exception>
         public bool CanUse(MongoCredentials credentials)
         {
-            return credentials.Protocol == MongoAuthenticationProtocol.Gssapi;
+            return credentials.Protocol == MongoAuthenticationProtocol.Gssapi && 
+                credentials.Identity is MongoExternalIdentity;
         }
 
         /// <summary>
@@ -42,7 +43,7 @@ namespace MongoDB.Driver.Communication.Security.Mechanisms
         /// <returns>The initial step.</returns>
         public ISaslStep Initialize(MongoConnection connection, MongoCredentials credentials)
         {
-            // TODO: provide an override to force the use of gsasl.
+            // TODO: provide an override to force the use of gsasl?
             bool useGsasl = !Environment.OSVersion.Platform.ToString().Contains("Win");
             if (useGsasl)
             {
