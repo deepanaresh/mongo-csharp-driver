@@ -569,17 +569,16 @@ namespace MongoDB.Driver
         /// <returns>A MongoServerSettings.</returns>
         public static MongoServerSettings FromConnectionStringBuilder(MongoConnectionStringBuilder builder)
         {
-            MongoCredentials credentials = null;
-            if (builder.Username != null && builder.Password != null)
-            {
-                var databaseName = builder.DatabaseName ?? "admin";
-                credentials = MongoCredentials.Negotiate(databaseName, builder.Username, builder.Password);
-            }
+            var credentials = MongoCredentials.FromComponents(
+                builder.AuthProtocol, 
+                builder.AuthSource, 
+                builder.DatabaseName, 
+                builder.Username, 
+                builder.Password);
 
             var serverSettings = new MongoServerSettings();
             serverSettings.ConnectionMode = builder.ConnectionMode;
             serverSettings.ConnectTimeout = builder.ConnectTimeout;
-            serverSettings.CredentialsStore = new MongoCredentialsStore();
             if (credentials != null)
             {
                 serverSettings.CredentialsStore.Add(credentials);
@@ -612,13 +611,19 @@ namespace MongoDB.Driver
         /// <returns>A MongoServerSettings.</returns>
         public static MongoServerSettings FromUrl(MongoUrl url)
         {
+            var credentials = MongoCredentials.FromComponents(
+                url.AuthProtocol,
+                url.AuthSource,
+                url.DatabaseName,
+                url.Username,
+                url.Password);
+
             var serverSettings = new MongoServerSettings();
             serverSettings.ConnectionMode = url.ConnectionMode;
             serverSettings.ConnectTimeout = url.ConnectTimeout;
-            serverSettings.CredentialsStore = new MongoCredentialsStore();
-            if (url.Credentials != null)
+            if (credentials != null)
             {
-                serverSettings.CredentialsStore.Add(url.Credentials);
+                serverSettings.CredentialsStore.Add(credentials);
             }
             serverSettings.GuidRepresentation = url.GuidRepresentation;
             serverSettings.IPv6 = url.IPv6;

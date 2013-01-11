@@ -7,12 +7,12 @@ namespace MongoDB.Driver
     public enum MongoAuthenticationProtocol
     {
         /// <summary>
-        /// Authenticate to the server using GSSAPI.
-        /// </summary>
-        Gssapi,
-        /// <summary>
         /// Authenticate to the server using the strongest means possible.
         /// </summary>
-        Strongest
+        Strongest,
+        /// <summary>
+        /// Authenticate to the server using GSSAPI.
+        /// </summary>
+        Gssapi
     }
 }

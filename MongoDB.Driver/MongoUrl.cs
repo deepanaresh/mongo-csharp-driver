@@ -55,6 +55,8 @@ namespace MongoDB.Driver
         private static Dictionary<string, MongoUrl> __cache = new Dictionary<string, MongoUrl>();
 
         // private fields
+        private readonly MongoAuthenticationProtocol _authProtocol;
+        private readonly string _authSource;
         private readonly ConnectionMode _connectionMode;
         private readonly TimeSpan _connectTimeout;
         private readonly MongoCredentials _credentials;
@@ -67,12 +69,14 @@ namespace MongoDB.Driver
         private readonly TimeSpan _maxConnectionLifeTime;
         private readonly int _maxConnectionPoolSize;
         private readonly int _minConnectionPoolSize;
+        private readonly string _password;
         private readonly ReadPreference _readPreference;
         private readonly string _replicaSetName;
         private readonly TimeSpan _secondaryAcceptableLatency;
         private readonly IEnumerable<MongoServerAddress> _servers;
         private readonly bool _slaveOk;
         private readonly TimeSpan _socketTimeout;
+        private readonly string _username;
         private readonly bool _useSsl;
         private readonly bool _verifySslCertificate;
         private readonly WriteConcern.WValue _w;
@@ -90,10 +94,11 @@ namespace MongoDB.Driver
         public MongoUrl(string url)
         {
             var builder = new MongoUrlBuilder(url); // parses url
+            _authProtocol = builder.AuthProtocol;
+            _authSource = builder.AuthSource;
             _connectionMode = builder.ConnectionMode;
             _connectTimeout = builder.ConnectTimeout;
             _databaseName = builder.DatabaseName;
-            _credentials = builder.Credentials;
             _fsync = builder.FSync;
             _guidRepresentation = builder.GuidRepresentation;
             _ipv6 = builder.IPv6;
@@ -102,6 +107,7 @@ namespace MongoDB.Driver
             _maxConnectionLifeTime = builder.MaxConnectionLifeTime;
             _maxConnectionPoolSize = builder.MaxConnectionPoolSize;
             _minConnectionPoolSize = builder.MinConnectionPoolSize;
+            _password = builder.Password;
             _readPreference = builder.ReadPreference;
             _replicaSetName = builder.ReplicaSetName;
             _secondaryAcceptableLatency = builder.SecondaryAcceptableLatency;
@@ -110,6 +116,7 @@ namespace MongoDB.Driver
             _slaveOk = builder.SlaveOk;
 #pragma warning restore
             _socketTimeout = builder.SocketTimeout;
+            _username = builder.Username;
             _useSsl = builder.UseSsl;
             _verifySslCertificate = builder.VerifySslCertificate;
             _w = builder.W;
@@ -140,6 +147,22 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
+        /// Gets the auth protocol.
+        /// </summary>
+        public MongoAuthenticationProtocol AuthProtocol
+        {
+            get { return _authProtocol; }
+        }
+
+        /// <summary>
+        /// Gets the auth source.
+        /// </summary>
+        public string AuthSource
+        {
+            get { return _authSource; }
+        }
+
+        /// <summary>
         /// Gets the connection mode.
         /// </summary>
         public ConnectionMode ConnectionMode
@@ -156,28 +179,11 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
-        /// Gets the credentials.
-        /// </summary>
-        public MongoCredentials Credentials
-        {
-            get { return _credentials; }
-        }
-
-        /// <summary>
         /// Gets the optional database name.
         /// </summary>
         public string DatabaseName
         {
             get { return _databaseName; }
-        }
-
-        /// <summary>
-        /// Gets the default credentials.
-        /// </summary>
-        [Obsolete("Use Credentials instead.")]
-        public MongoCredentials DefaultCredentials
-        {
-            get { return Credentials; }
         }
 
         /// <summary>
@@ -242,6 +248,14 @@ namespace MongoDB.Driver
         public int MinConnectionPoolSize
         {
             get { return _minConnectionPoolSize; }
+        }
+
+        /// <summary>
+        /// Gets the password.
+        /// </summary>
+        public string Password
+        {
+            get { return _password; }
         }
 
         /// <summary>
@@ -331,6 +345,14 @@ namespace MongoDB.Driver
         public string Url
         {
             get { return _url; }
+        }
+
+        /// <summary>
+        /// Gets the username.
+        /// </summary>
+        public string Username
+        {
+            get { return _username; }
         }
 
         /// <summary>

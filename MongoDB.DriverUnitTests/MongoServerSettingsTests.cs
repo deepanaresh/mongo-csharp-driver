@@ -163,11 +163,11 @@ namespace MongoDB.DriverUnitTests
 
             clone = settings.Clone();
             clone.CredentialsStore = new MongoCredentialsStore();
-            clone.CredentialsStore.Add(MongoCredentials.Negotiate("db2", "user2", "password2"));
+            clone.CredentialsStore.Add(MongoCredentials.Strongest("db2", "user2", "password2"));
             Assert.IsFalse(clone.Equals(settings));
 
             clone = settings.Clone();
-            clone.CredentialsStore.Add(MongoCredentials.Negotiate("db1", "user2", "password2"));
+            clone.CredentialsStore.Add(MongoCredentials.Strongest("db1", "user2", "password2"));
             Assert.IsFalse(clone.Equals(settings));
 
             clone = settings.Clone();
@@ -263,7 +263,7 @@ namespace MongoDB.DriverUnitTests
         {
             // set everything to non default values to test that all settings are converted
             var connectionString =
-                "mongodb://user1:password1@somehost/?" +
+                "mongodb://user1:password1@somehost/?authSource=db;" +
                 "connect=direct;connectTimeout=123;uuidRepresentation=pythonLegacy;ipv6=true;" +
                 "maxIdleTime=124;maxLifeTime=125;maxPoolSize=126;minPoolSize=127;" +
                 "readPreference=secondary;readPreferenceTags=a:1,b:2;readPreferenceTags=c:3,d:4;secondaryAcceptableLatency=128;socketTimeout=129;" +
@@ -277,9 +277,10 @@ namespace MongoDB.DriverUnitTests
             Assert.AreEqual(url.ConnectionMode, settings.ConnectionMode);
             Assert.AreEqual(url.ConnectTimeout, settings.ConnectTimeout);
             Assert.AreEqual(1, settings.CredentialsStore.Count);
-            Assert.AreEqual(url.Credentials.Username, settings.CredentialsStore.Single().Username);
-            Assert.AreEqual(url.Credentials.Source, settings.CredentialsStore.Single().Source);
-            Assert.AreEqual(((PasswordEvidence)url.Credentials.Evidence).Password, ((PasswordEvidence)settings.CredentialsStore.Single().Evidence).Password);
+            Assert.AreEqual(url.Username, settings.CredentialsStore.Single().Username);
+            Assert.AreEqual(url.AuthProtocol, settings.CredentialsStore.Single().Protocol);
+            Assert.AreEqual(url.AuthSource, settings.CredentialsStore.Single().Source);
+            Assert.AreEqual(url.Password, ((PasswordEvidence)settings.CredentialsStore.Single().Evidence).Password);
             Assert.AreEqual(url.GuidRepresentation, settings.GuidRepresentation);
             Assert.AreEqual(url.IPv6, settings.IPv6);
             Assert.AreEqual(url.MaxConnectionIdleTime, settings.MaxConnectionIdleTime);
@@ -343,7 +344,7 @@ namespace MongoDB.DriverUnitTests
         {
             // set everything to non default values to test that all settings are converted
             var connectionString =
-                "mongodb://user1:password1@somehost/?" +
+                "mongodb://user1:password1@somehost/?authSource=db;" +
                 "connect=direct;connectTimeout=123;uuidRepresentation=pythonLegacy;ipv6=true;" +
                 "maxIdleTime=124;maxLifeTime=125;maxPoolSize=126;minPoolSize=127;" +
                 "readPreference=secondary;readPreferenceTags=a:1,b:2;readPreferenceTags=c:3,d:4;secondaryAcceptableLatency=128;socketTimeout=129;" +
@@ -356,9 +357,10 @@ namespace MongoDB.DriverUnitTests
             Assert.AreEqual(url.ConnectionMode, settings.ConnectionMode);
             Assert.AreEqual(url.ConnectTimeout, settings.ConnectTimeout);
             Assert.AreEqual(1, settings.CredentialsStore.Count);
-            Assert.AreEqual(url.Credentials.Username, settings.CredentialsStore.Single().Username);
-            Assert.AreEqual(url.Credentials.Source, settings.CredentialsStore.Single().Source);
-            Assert.AreEqual(((PasswordEvidence)url.Credentials.Evidence).Password, ((PasswordEvidence)settings.CredentialsStore.Single().Evidence).Password);
+            Assert.AreEqual(url.Username, settings.CredentialsStore.Single().Username);
+            Assert.AreEqual(url.AuthProtocol, settings.CredentialsStore.Single().Protocol);
+            Assert.AreEqual(url.AuthSource, settings.CredentialsStore.Single().Source);
+            Assert.AreEqual(url.Password, ((PasswordEvidence)settings.CredentialsStore.Single().Evidence).Password);
             Assert.AreEqual(url.GuidRepresentation, settings.GuidRepresentation);
             Assert.AreEqual(url.IPv6, settings.IPv6);
             Assert.AreEqual(url.MaxConnectionIdleTime, settings.MaxConnectionIdleTime);
@@ -399,16 +401,16 @@ namespace MongoDB.DriverUnitTests
         {
             var settings = new MongoServerSettings();
             var credentialsStore = new MongoCredentialsStore();
-            credentialsStore.Add(MongoCredentials.Negotiate("db1", "user1", "password1"));
-            credentialsStore.Add(MongoCredentials.Negotiate("db2", "user2", "password2"));
+            credentialsStore.Add(MongoCredentials.Strongest("db1", "user1", "password1"));
+            credentialsStore.Add(MongoCredentials.Strongest("db2", "user2", "password2"));
             settings.CredentialsStore = credentialsStore;
 
-            Assert.AreEqual(MongoCredentials.Negotiate("db1", "user1", "password1"), settings.GetCredentials("db1"));
-            Assert.AreEqual(MongoCredentials.Negotiate("db2", "user2", "password2"), settings.GetCredentials("db2"));
+            Assert.AreEqual(MongoCredentials.Strongest("db1", "user1", "password1"), settings.GetCredentials("db1"));
+            Assert.AreEqual(MongoCredentials.Strongest("db2", "user2", "password2"), settings.GetCredentials("db2"));
             Assert.AreEqual(null, settings.GetCredentials("db3"));
             Assert.AreEqual(null, settings.GetCredentials("admin"));
 
-            var credentials = MongoCredentials.Negotiate("db3", "defaultuser", "defaultpassword");
+            var credentials = MongoCredentials.Strongest("db3", "defaultuser", "defaultpassword");
             settings.CredentialsStore = new MongoCredentialsStore();
             settings.CredentialsStore.Add(credentials);
             Assert.AreEqual(credentials, settings.GetCredentials("db3"));

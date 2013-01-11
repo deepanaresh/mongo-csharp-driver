@@ -32,6 +32,8 @@ namespace MongoDB.Driver
         // private static fields
         private static Dictionary<string, string> __canonicalKeywords = new Dictionary<string, string>
         {
+            { "authprotocol", "authProtocol" },
+            { "authsource", "authSource"},
             { "connect", "connect" },
             { "connecttimeout", "connectTimeout" },
             { "connecttimeoutms", "connectTimeout" },
@@ -73,6 +75,8 @@ namespace MongoDB.Driver
 
         // private fields
         // default values are set in ResetValues
+        private MongoAuthenticationProtocol _authProtocol;
+        private string _authSource;
         private ConnectionMode _connectionMode;
         private TimeSpan _connectTimeout;
         private string _databaseName;
@@ -120,6 +124,31 @@ namespace MongoDB.Driver
         }
 
         // public properties
+        /// <summary>
+        /// Gets or sets the auth protocol.
+        /// </summary>
+        public MongoAuthenticationProtocol AuthProtocol
+        {
+            get { return _authProtocol; }
+            set 
+            {
+                _authProtocol = value;
+                base["authProtocol"] = value.ToString().ToUpperInvariant();
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the auth source.
+        /// </summary>
+        public string AuthSource
+        {
+            get { return _authSource; }
+            set
+            {
+                base["authSource"] = _authSource = value;
+            }
+        }
+
         /// <summary>
         /// Gets the actual wait queue size (either WaitQueueSize or WaitQueueMultiple x MaxConnectionPoolSize).
         /// </summary>
@@ -641,6 +670,19 @@ namespace MongoDB.Driver
                 ReadPreference readPreference;
                 switch (keyword.ToLower())
                 {
+                    case "authprotocol":
+                        if (value is string)
+                        {
+                            AuthProtocol = (MongoAuthenticationProtocol)Enum.Parse(typeof(MongoAuthenticationProtocol), (string)value, true);
+                        }
+                        else
+                        {
+                            AuthProtocol = (MongoAuthenticationProtocol)value;
+                        }
+                        break;
+                    case "authsource":
+                        AuthSource = (string)value;
+                        break;
                     case "connect":
                         if (value is string)
                         {
@@ -920,6 +962,8 @@ namespace MongoDB.Driver
         private void ResetValues()
         {
             // set fields and not properties so base class items aren't set
+            _authProtocol = MongoAuthenticationProtocol.Strongest;
+            _authSource = null;
             _connectionMode = ConnectionMode.Automatic;
             _connectTimeout = MongoDefaults.ConnectTimeout;
             _databaseName = null;
