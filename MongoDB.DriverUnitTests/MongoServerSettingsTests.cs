@@ -105,28 +105,12 @@ namespace MongoDB.DriverUnitTests
         }
 
         [Test]
-        public void TestDefaultCredentials()
-        {
-            var settings = new MongoServerSettings();
-            Assert.AreEqual(null, settings.DefaultCredentials);
-
-            var defaultCredentials = new MongoCredentials("user1", "password1");
-            settings.DefaultCredentials = defaultCredentials;
-            Assert.AreSame(defaultCredentials, settings.DefaultCredentials);
-
-            settings.Freeze();
-            Assert.AreSame(defaultCredentials, settings.DefaultCredentials);
-            Assert.Throws<InvalidOperationException>(() => { settings.DefaultCredentials = defaultCredentials; });
-        }
-
-        [Test]
         public void TestDefaults()
         {
             var settings = new MongoServerSettings();
             Assert.AreEqual(ConnectionMode.Automatic, settings.ConnectionMode);
             Assert.AreEqual(MongoDefaults.ConnectTimeout, settings.ConnectTimeout);
-            Assert.AreEqual("{}", settings.CredentialsStore.ToString());
-            Assert.AreEqual(null, settings.DefaultCredentials);
+            Assert.AreEqual(0, settings.CredentialsStore.Count);
             Assert.AreEqual(MongoDefaults.GuidRepresentation, settings.GuidRepresentation);
             Assert.AreEqual(false, settings.IPv6);
             Assert.AreEqual(MongoDefaults.MaxConnectionIdleTime, settings.MaxConnectionIdleTime);
@@ -394,27 +378,6 @@ namespace MongoDB.DriverUnitTests
 
             var secondFrozenCopy = frozenCopy.FrozenCopy();
             Assert.AreSame(frozenCopy, secondFrozenCopy);
-        }
-
-        [Test]
-        public void TestGetCredentials()
-        {
-            var settings = new MongoServerSettings();
-            var credentialsStore = new MongoCredentialsStore();
-            credentialsStore.Add(MongoCredentials.Strongest("db1", "user1", "password1"));
-            credentialsStore.Add(MongoCredentials.Strongest("db2", "user2", "password2"));
-            settings.CredentialsStore = credentialsStore;
-
-            Assert.AreEqual(MongoCredentials.Strongest("db1", "user1", "password1"), settings.GetCredentials("db1"));
-            Assert.AreEqual(MongoCredentials.Strongest("db2", "user2", "password2"), settings.GetCredentials("db2"));
-            Assert.AreEqual(null, settings.GetCredentials("db3"));
-            Assert.AreEqual(null, settings.GetCredentials("admin"));
-
-            var credentials = MongoCredentials.Strongest("db3", "defaultuser", "defaultpassword");
-            settings.CredentialsStore = new MongoCredentialsStore();
-            settings.CredentialsStore.Add(credentials);
-            Assert.AreEqual(credentials, settings.GetCredentials("db3"));
-            Assert.AreEqual(null, settings.GetCredentials("admin"));
         }
 
         [Test]

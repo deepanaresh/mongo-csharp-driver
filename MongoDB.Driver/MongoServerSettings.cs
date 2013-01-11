@@ -219,38 +219,6 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
-        /// Gets or sets the default credentials.
-        /// </summary>
-        [Obsolete("Use CredentialsStore instead.")]
-        public MongoCredentials DefaultCredentials
-        {
-            get
-            {
-                if (_credentialsStore.Count == 0)
-                {
-                    return null;
-                }
-                else if (_credentialsStore.Count == 1)
-                {
-                    return _credentialsStore.Single();
-                }
-                else
-                {
-                    throw new InvalidOperationException("There are multiple credentials. Use CredentialsStore instead.");
-                }
-            }
-            set
-            {
-                if (_isFrozen) { throw new InvalidOperationException("MongoClientSettings is frozen."); }
-                _credentialsStore = new MongoCredentialsStore();
-                if (value != null)
-                {
-                    _credentialsStore.Add(value);
-                }
-            }
-        }
-
-        /// <summary>
         /// Gets or sets the representation to use for Guids.
         /// </summary>
         public GuidRepresentation GuidRepresentation

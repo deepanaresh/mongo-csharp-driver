@@ -93,28 +93,12 @@ namespace MongoDB.DriverUnitTests
         }
 
         [Test]
-        public void TestDefaultCredentials()
-        {
-            var settings = new MongoClientSettings();
-            Assert.AreEqual(null, settings.DefaultCredentials);
-
-            var defaultCredentials = new MongoCredentials("user1", "password1");
-            settings.DefaultCredentials = defaultCredentials;
-            Assert.AreSame(defaultCredentials, settings.DefaultCredentials);
-
-            settings.Freeze();
-            Assert.AreSame(defaultCredentials, settings.DefaultCredentials);
-            Assert.Throws<InvalidOperationException>(() => { settings.DefaultCredentials = defaultCredentials; });
-        }
-
-        [Test]
         public void TestDefaults()
         {
             var settings = new MongoClientSettings();
             Assert.AreEqual(ConnectionMode.Automatic, settings.ConnectionMode);
             Assert.AreEqual(MongoDefaults.ConnectTimeout, settings.ConnectTimeout);
-            Assert.AreEqual("{}", settings.CredentialsStore.ToString());
-            Assert.AreEqual(null, settings.DefaultCredentials);
+            Assert.AreEqual(0, settings.CredentialsStore.Count);
             Assert.AreEqual(MongoDefaults.GuidRepresentation, settings.GuidRepresentation);
             Assert.AreEqual(false, settings.IPv6);
             Assert.AreEqual(MongoDefaults.MaxConnectionIdleTime, settings.MaxConnectionIdleTime);

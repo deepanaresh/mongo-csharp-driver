@@ -32,20 +32,23 @@ namespace MongoDB.Driver
         /// <summary>
         /// Creates a new instance of MongoUser.
         /// </summary>
-        /// <param name="credentials">The user's credentials.</param>
+        /// <param name="username">The username.</param>
+        /// <param name="password">The password.</param>
         /// <param name="isReadOnly">Whether the user has read-only access.</param>
-        public MongoUser(MongoCredentials credentials, bool isReadOnly)
+        /// <exception cref="System.ArgumentNullException">credentials</exception>
+        /// <exception cref="System.ArgumentException">Credentials must have password evidence to create a user.</exception>
+        public MongoUser(string username, PasswordEvidence password, bool isReadOnly)
         {
-            if (credentials == null)
+            if (username == null)
             {
                 throw new ArgumentNullException("credentials");
             }
-            if (!(credentials.Evidence is PasswordEvidence))
+            if (password == null)
             {
-                throw new ArgumentException("Credentials must have password evidence to create a user.");
+                throw new ArgumentNullException("password");
             }
-            _username = credentials.Username;
-            _passwordHash = HashPassword(credentials.Username, ((PasswordEvidence)credentials.Evidence).Password);
+            _username = username;
+            _passwordHash = HashPassword(username, password.Password);
             _isReadOnly = isReadOnly;
         }
 

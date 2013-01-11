@@ -59,7 +59,6 @@ namespace MongoDB.Driver
         private readonly string _authSource;
         private readonly ConnectionMode _connectionMode;
         private readonly TimeSpan _connectTimeout;
-        private readonly MongoCredentials _credentials;
         private readonly string _databaseName;
         private readonly bool? _fsync;
         private readonly GuidRepresentation _guidRepresentation;

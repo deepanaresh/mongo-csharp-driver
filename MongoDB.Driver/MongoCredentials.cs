@@ -55,83 +55,7 @@ namespace MongoDB.Driver
             _evidence = evidence;
         }
 
-        /// <summary>
-        /// Creates a new instance of MongoCredentials.
-        /// </summary>
-        /// <param name="username">The username.</param>
-        /// <param name="password">The password.</param>
-        [Obsolete("Use a different constructor.")]
-        public MongoCredentials(string username, string password)
-        {
-            _protocol = MongoAuthenticationProtocol.Strongest;
-            ValidatePassword(password);
-            if (username.EndsWith("(admin)", StringComparison.Ordinal))
-            {
-                _identity = new MongoInternalIdentity("admin", username.Substring(0, username.Length - 7));
-            }
-            else
-            {
-                // TODO: What should we do here?  We need a source...
-                _identity = new MongoInternalIdentity("test", username);
-            }
-
-            _evidence = new PasswordEvidence(password);
-        }
-
-        /// <summary>
-        /// Creates a new instance of MongoCredentials.
-        /// </summary>
-        /// <param name="username">The username.</param>
-        /// <param name="password">The password.</param>
-        /// <param name="admin">Whether the credentials should be validated against the admin database.</param>
-        [Obsolete("Use a different constructor.")]
-        public MongoCredentials(string username, string password, bool admin)
-        {
-            _protocol = MongoAuthenticationProtocol.Strongest;
-            ValidatePassword(password);
-            if (admin)
-            {
-                _identity = new MongoInternalIdentity("admin", username);
-            }
-            else
-            {
-                // TODO: What should we do here?  We need a source...
-                _identity = new MongoInternalIdentity("test", username);
-            }
-
-            _evidence = new PasswordEvidence(password);
-        }
-
-        /// <summary>
-        /// Creates an instance of MongoCredentials.
-        /// </summary>
-        /// <param name="username">The username.</param>
-        /// <param name="password">The password.</param>
-        /// <returns>A new instance of MongoCredentials (or null if either parameter is null).</returns>
-        // factory methods
-        [Obsolete("Use a different constructor.")]
-        public static MongoCredentials Create(string username, string password)
-        {
-            if (username != null && password != null)
-            {
-                return new MongoCredentials(username, password);
-            }
-            else
-            {
-                return null;
-            }
-        }
-
         // public properties
-        /// <summary>
-        /// Gets whether the credentials should be validated against the admin database.
-        /// </summary>
-        [Obsolete("Use Source instead.")]
-        public bool Admin
-        {
-            get { return _identity.Source == "admin"; }
-        }
-
         /// <summary>
         /// Gets the protocol to authenticate with.
         /// </summary>
@@ -294,7 +218,7 @@ namespace MongoDB.Driver
         public bool Equals(MongoCredentials rhs)
         {
             if (object.ReferenceEquals(rhs, null) || GetType() != rhs.GetType()) { return false; }
-            return _identity == rhs._identity;
+            return _identity == rhs._identity && _evidence == rhs._evidence;
         }
 
         /// <summary>
@@ -316,6 +240,7 @@ namespace MongoDB.Driver
             // see Effective Java by Joshua Bloch
             int hash = 17;
             hash = 37 * hash + _identity.GetHashCode();
+            hash = 37 * hash + _evidence.GetHashCode();
             return hash;
         }
 

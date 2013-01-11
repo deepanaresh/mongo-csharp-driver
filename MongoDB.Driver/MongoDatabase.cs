@@ -253,20 +253,22 @@ namespace MongoDB.Driver
         /// <summary>
         /// Adds a user to this database.
         /// </summary>
-        /// <param name="credentials">The user's credentials.</param>
-        public virtual void AddUser(MongoCredentials credentials)
+        /// <param name="username">The username.</param>
+        /// <param name="password">The password.</param>
+        public virtual void AddUser(string username, PasswordEvidence password)
         {
-            AddUser(credentials, false);
+            AddUser(username, password, false);
         }
 
         /// <summary>
         /// Adds a user to this database.
         /// </summary>
-        /// <param name="credentials">The user's credentials.</param>
+        /// <param name="username">The username.</param>
+        /// <param name="password">The password.</param>
         /// <param name="readOnly">True if the user is a read-only user.</param>
-        public virtual void AddUser(MongoCredentials credentials, bool readOnly)
+        public virtual void AddUser(string username, PasswordEvidence password, bool readOnly)
         {
-            var user = new MongoUser(credentials, readOnly);
+            var user = new MongoUser(username, password, readOnly);
             AddUser(user);
         }
 
@@ -824,24 +826,6 @@ namespace MongoDB.Driver
         /// <returns>A CommandResult.</returns>
         public virtual CommandResult RenameCollection(string oldCollectionName, string newCollectionName, bool dropTarget)
         {
-            var adminCredentials = _server.Settings.GetCredentials("admin");
-            return RenameCollection(oldCollectionName, newCollectionName, dropTarget, adminCredentials);
-        }
-
-        /// <summary>
-        /// Renames a collection on this database.
-        /// </summary>
-        /// <param name="oldCollectionName">The old name for the collection.</param>
-        /// <param name="newCollectionName">The new name for the collection.</param>
-        /// <param name="dropTarget">Whether to drop the target collection first if it already exists.</param>
-        /// <param name="adminCredentials">Credentials for the admin database.</param>
-        /// <returns>A CommandResult.</returns>
-        public virtual CommandResult RenameCollection(
-            string oldCollectionName,
-            string newCollectionName,
-            bool dropTarget,
-            MongoCredentials adminCredentials)
-        {
             if (oldCollectionName == null)
             {
                 throw new ArgumentNullException("oldCollectionName");
@@ -864,18 +848,6 @@ namespace MongoDB.Driver
             };
             var adminDatabase = _server.GetDatabase("admin");
             return adminDatabase.RunCommand(command);
-        }
-
-        /// <summary>
-        /// Renames a collection on this database.
-        /// </summary>
-        /// <param name="oldCollectionName">The old name for the collection.</param>
-        /// <param name="newCollectionName">The new name for the collection.</param>
-        /// <param name="adminCredentials">Credentials for the admin database.</param>
-        /// <returns>A CommandResult.</returns>
-        public virtual CommandResult RenameCollection(string oldCollectionName, string newCollectionName, MongoCredentials adminCredentials)
-        {
-            return RenameCollection(oldCollectionName, newCollectionName, false, adminCredentials); // dropTarget = false
         }
 
         /// <summary>
