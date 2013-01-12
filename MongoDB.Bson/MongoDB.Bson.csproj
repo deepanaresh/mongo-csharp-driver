@@ -98,6 +98,7 @@
     <Compile Include="Serialization\Attributes\BsonDateTimeOptionsAttribute.cs" />
     <Compile Include="Serialization\Attributes\BsonDictionaryOptionsAttribute.cs" />
     <Compile Include="Serialization\Attributes\BsonExtraElementsAttribute.cs" />
+    <Compile Include="Serialization\Attributes\BsonFactoryMethodAttribute.cs" />
     <Compile Include="Serialization\Attributes\BsonIgnoreIfDefaultAttribute.cs" />
     <Compile Include="Serialization\Attributes\BsonMemberMapAttributeUsageAttribute.cs" />
     <Compile Include="Serialization\Attributes\BsonNoIdAttribute.cs" />
@@ -108,15 +109,13 @@
     <Compile Include="Serialization\Attributes\IBsonMemberMapAttribute.cs" />
     <Compile Include="Serialization\Attributes\IBsonClassMapAttribute.cs" />
     <Compile Include="Serialization\Attributes\IBsonPostProcessingAttribute.cs" />
-    <Compile Include="Serialization\Attributes\ICreatorMapAttribute.cs" />
+    <Compile Include="Serialization\Attributes\IBsonCreatorMapAttribute.cs" />
     <Compile Include="Serialization\BsonClassMapSerializationProvider.cs" />
-    <Compile Include="Serialization\BsonConstructorMap.cs" />
     <Compile Include="Serialization\BsonCreatorMap.cs" />
     <Compile Include="Serialization\BsonDocumentBackedClass.cs" />
-    <Compile Include="Serialization\BsonFactoryMethodMap.cs" />
     <Compile Include="Serialization\Conventions\AttributeConventionPack.cs" />
     <Compile Include="Serialization\Conventions\CamelCaseElementNameConvention.cs" />
-    <Compile Include="Serialization\Conventions\NamedParameterConstructorMapConvention.cs" />
+    <Compile Include="Serialization\Conventions\NamedParameterCreatorMapConvention.cs" />
     <Compile Include="Serialization\Conventions\ConventionBase.cs" />
     <Compile Include="Serialization\Conventions\ConventionPack.cs" />
     <Compile Include="Serialization\Conventions\ConventionRegistry.cs" />
@@ -160,6 +159,8 @@
     <Compile Include="Serialization\Conventions\ScalarDiscriminatorConvention.cs" />
     <Compile Include="Serialization\Conventions\StandardDiscriminatorConvention.cs" />
     <Compile Include="Serialization\Conventions\StringObjectIdIdGeneratorConvention.cs" />
+    <Compile Include="Serialization\CreatorMapDelegateCompiler.cs" />
+    <Compile Include="Serialization\ExpressionVisitor.cs" />
     <Compile Include="Serialization\IdGenerators\BsonBinaryDataGuidGenerator.cs" />
     <Compile Include="Serialization\IdGenerators\BsonObjectIdGenerator.cs" />
     <Compile Include="Serialization\IdGenerators\CombGuidGenerator.cs" />

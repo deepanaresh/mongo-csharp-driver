@@ -18,26 +18,26 @@ using System;
 namespace MongoDB.Bson.Serialization.Attributes
 {
     /// <summary>
-    /// Specifies that this constructor should be used for creator-based deserialization.
+    /// Specifies that this factory method should be used for creator-based deserialization.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Constructor)]
-    public class BsonConstructorAttribute : Attribute, IBsonCreatorMapAttribute
+    [AttributeUsage(AttributeTargets.Method)]
+    public class BsonFactoryMethodAttribute : Attribute, IBsonCreatorMapAttribute
     {
         // private fields
         private string[] _argumentNames;
 
         // constructors
         /// <summary>
-        /// Initializes a new instance of the BsonConstructorAttribute class.
+        /// Initializes a new instance of the BsonFactoryMethodAttribute class.
         /// </summary>
-        public BsonConstructorAttribute()
+        public BsonFactoryMethodAttribute()
         { }
 
         /// <summary>
-        /// Initializes a new instance of the BsonConstructorAttribute class.
+        /// Initializes a new instance of the BsonFactoryMethodAttribute class.
         /// </summary>
         /// <param name="argumentNames">The names of the members that the creator argument values come from.</param>
-        public BsonConstructorAttribute(params string[] argumentNames)
+        public BsonFactoryMethodAttribute(params string[] argumentNames)
         {
             _argumentNames = argumentNames;
         }

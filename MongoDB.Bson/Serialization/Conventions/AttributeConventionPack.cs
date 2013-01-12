@@ -81,7 +81,7 @@ namespace MongoDB.Bson.Serialization.Conventions
 #pragma warning restore 618
 
                 OptInMembersWithBsonMemberMapModifierAttribute(classMap);
-                OptInConstructorsWithBsonConstructorMapModifierAttribute(classMap);
+                OptInMembersWithBsonCreatorMapModifierAttribute(classMap);
                 IgnoreMembersWithBsonIgnoreAttribute(classMap);
                 ThrowForDuplicateMemberMapAttributes(classMap);
             }
@@ -133,15 +133,25 @@ namespace MongoDB.Bson.Serialization.Conventions
                 return usageAttribute == null || usageAttribute.AllowMultipleMembers;
             }
 
-            private void OptInConstructorsWithBsonConstructorMapModifierAttribute(BsonClassMap classMap)
+            private void OptInMembersWithBsonCreatorMapModifierAttribute(BsonClassMap classMap)
             {
-                // let other constructors opt-in if they have any IBsonConstructorMapAttibute attributes
+                // let other constructors opt-in if they have any IBsonCreatorMapAttribute attributes
                 foreach (var constructorInfo in classMap.ClassType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
                 {
                     var hasAttribute = constructorInfo.GetCustomAttributes(typeof(IBsonCreatorMapAttribute), false).Any();
                     if (hasAttribute)
                     {
                         classMap.MapConstructor(constructorInfo);
+                    }
+                }
+
+                // let other static factory methods opt-in if they have any IBsonCreatorMapAttribute attributes
+                foreach (var methodInfo in classMap.ClassType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
+                {
+                    var hasAttribute = methodInfo.GetCustomAttributes(typeof(IBsonCreatorMapAttribute), false).Any();
+                    if (hasAttribute)
+                    {
+                        classMap.MapFactoryMethod(methodInfo);
                     }
                 }
             }

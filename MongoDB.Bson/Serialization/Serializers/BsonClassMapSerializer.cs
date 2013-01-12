@@ -221,7 +221,7 @@ namespace MongoDB.Bson.Serialization
                     var memberMapBlock = ~memberMapBitArray[bitArrayIndex]; // notice that bits are flipped so 1's are now the missing elements
 
                     // work through this memberMapBlock of 32 elements
-                    for (; ; )
+                    for (;;)
                     {
                         // examine missing elements (memberMapBlock is shifted right as we work through the block)
                         for (; (memberMapBlock & 1) != 0; ++memberMapIndex, memberMapBlock >>= 1)
@@ -464,28 +464,8 @@ namespace MongoDB.Bson.Serialization
         }
 
         // private methods
-        private bool CreatorIsBetterMatch(BsonCreatorMap lhs, BsonCreatorMap rhs)
+        private BsonCreatorMap ChooseBestCreator(Dictionary<string, object> values)
         {
-            // a creator is considered a better match if it has more parameters
-            return lhs.Parameters.Count() > rhs.Parameters.Count();
-        }
-
-        private bool CreatorMatches(BsonCreatorMap creatorMap, Dictionary<string, object> values)
-        {
-            // a creator is a match if we have a value for each parameter (either a deserialized value or a default value)
-            foreach (var parameter in creatorMap.Parameters)
-            {
-                if (!values.ContainsKey(parameter.ElementName) && !parameter.IsDefaultValueSpecified)
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        private object CreateInstanceUsingCreator(Dictionary<string, object> values)
-        {
-            // find best creator
             BsonCreatorMap bestCreatorMap = null;
             foreach (var creatorMap in _classMap.CreatorMaps)
             {
@@ -506,27 +486,31 @@ namespace MongoDB.Bson.Serialization
                 throw new BsonSerializationException("No matching creator found.");
             }
 
-            // match values to creator parameters
+            return bestCreatorMap;
+        }
+
+        private object CreateInstanceUsingCreator(Dictionary<string, object> values)
+        {
+            var creatorMap = ChooseBestCreator(values);
+
+            // get the values for the arguments to be passed to the creator delegate
             var arguments = new List<object>();
-            foreach (var parameter in bestCreatorMap.Parameters)
+            foreach (var elementName in creatorMap.ElementNames)
             {
                 object argument;
-                if (values.TryGetValue(parameter.ElementName, out argument))
+                if (values.TryGetValue(elementName, out argument))
                 {
-                    arguments.Add(argument);
-                    values.Remove(parameter.ElementName);
+                    values.Remove(elementName);
                 }
-                else if (parameter.IsDefaultValueSpecified)
+                else if (!creatorMap.TryGetDefaultValue(elementName, out argument))
                 {
-                    arguments.Add(parameter.DefaultValue);
+                    // shouldn't happen unless there is a bug in ChooseBestCreator
+                    throw new BsonInternalException();
                 }
-                else
-                {
-                    throw new BsonInternalException("Unable to determine value for creator parameter.");
-                }
+                arguments.Add(argument);
             }
 
-            var obj = bestCreatorMap.Delegate.DynamicInvoke(arguments.ToArray());
+            var obj = creatorMap.Delegate.DynamicInvoke(arguments.ToArray());
 
             var supportsInitialization = obj as ISupportInitialize;
             if (supportsInitialization != null)
@@ -534,7 +518,7 @@ namespace MongoDB.Bson.Serialization
                 supportsInitialization.BeginInit();
             }
 
-            // try to process any left over values that weren't passed to the creator
+            // process any left over values that weren't passed to the creator
             foreach (var keyValuePair in values)
             {
                 var elementName = keyValuePair.Key;
@@ -553,6 +537,26 @@ namespace MongoDB.Bson.Serialization
             }
 
             return obj;
+        }
+
+        private bool CreatorIsBetterMatch(BsonCreatorMap lhs, BsonCreatorMap rhs)
+        {
+            // a creator is considered a better match if it has more parameters
+            return lhs.Arguments.Count() > rhs.Arguments.Count();
+        }
+
+        private bool CreatorMatches(BsonCreatorMap creatorMap, Dictionary<string, object> values)
+        {
+            // a creator is a match if we have a value for each parameter (either a deserialized value or a default value)
+            foreach (var elementName in creatorMap.ElementNames)
+            {
+                if (!values.ContainsKey(elementName) && ! creatorMap.HasDefaultValue(elementName))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private void DeserializeExtraElement(

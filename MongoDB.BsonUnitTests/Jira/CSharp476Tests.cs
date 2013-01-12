@@ -45,14 +45,14 @@ namespace MongoDB.BsonUnitTests.Jira
         {
             private int _z;
 
-            //[BsonConstructor] // NamedParameterConstructorMapConvention will match the parameters to members
+            //[BsonConstructor] // NamedParameterCreatorMapConvention will match the parameters to members
             //[BsonConstructor("X", "Y")]
             public D(int x, int y)
                 : base(x, y)
             {
             }
 
-            //[BsonFactoryMethod]
+            //[BsonFactoryMethod] // NamedParameterCreatorMapConvention will match the parameters to members
             //[BsonFactoryMethod("X", "Y")]
             public static D Create(int x, int y)
             {
@@ -77,17 +77,15 @@ namespace MongoDB.BsonUnitTests.Jira
                 cm.MapMember(d => d.Z);
 
                 var constructorInfo = typeof(D).GetConstructor(new[] { typeof(int), typeof(int) });
-                var parameters = new[] { ccm.GetMemberMap(c => c.X), ccm.GetMemberMap(c => c.Y) };
-                cm.MapConstructor(constructorInfo, parameters);
-                //cm.MapConstructor(d => new D(d.X, d.Y)); // must call constructor
+                //cm.MapConstructor(constructorInfo, "X", "Y");
 
                 var methodInfo = typeof(D).GetMethod("Create");
-                //cm.MapFactoryMethod(methodInfo, parameters);
-                //cm.MapFactoryMethod(d => D.Create(d.X, d.Y)); // must call static method in D
+                //cm.MapFactoryMethod(methodInfo, "X", "Y");
 
                 var @delegate = (Func<int, int, D>)((int x, int y) => { var a = x; var b = y; return D.Create(a, b); }); // arbitrary code
-                //cm.MapCreator(@delegate, parameters);
-                //cm.MapCreator(d => D.Create(d.X, d.Y)); // arbitrary code
+                //cm.MapCreator(@delegate, "X", "Y"); // example using a delegate
+                //cm.MapCreator(d => new D(d.X, d.Y)); // example using a constructor
+                cm.MapCreator(d => D.Create(d.X, d.Y)); // example using a factory method
             });
         }
 

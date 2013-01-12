@@ -64,9 +64,9 @@ namespace MongoDB.Bson.Serialization.Conventions
 
             foreach (var convention in _conventions.OfType<ICreatorMapConvention>())
             {
-                foreach (var constructorMap in classMap.CreatorMaps)
+                foreach (var creatorMap in classMap.CreatorMaps)
                 {
-                    convention.Apply(constructorMap);
+                    convention.Apply(creatorMap);
                 }
             }
 
