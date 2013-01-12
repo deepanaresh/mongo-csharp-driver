@@ -166,7 +166,6 @@
     <Compile Include="MongoClient.cs" />
     <Compile Include="MongoClientSettings.cs" />
     <Compile Include="MongoCollectionSettings.cs" />
-    <Compile Include="MongoCredentialsStore.cs" />
     <Compile Include="MongoDatabaseSettings.cs" />
     <Compile Include="MongoDBRef.cs" />
     <Compile Include="MongoExternalIdentity.cs" />

@@ -30,7 +30,7 @@ namespace MongoDB.Driver
         // private fields
         private ConnectionMode _connectionMode;
         private TimeSpan _connectTimeout;
-        private MongoCredentialsStore _credentialsStore;
+        private ReadOnlyCollection<MongoCredentials> _credentialsList;
         private GuidRepresentation _guidRepresentation;
         private bool _ipv6;
         private TimeSpan _maxConnectionIdleTime;
@@ -61,7 +61,7 @@ namespace MongoDB.Driver
         {
             _connectionMode = ConnectionMode.Automatic;
             _connectTimeout = MongoDefaults.ConnectTimeout;
-            _credentialsStore = new MongoCredentialsStore();
+            _credentialsList = new ReadOnlyCollection<MongoCredentials>(new MongoCredentials[0]);
             _guidRepresentation = MongoDefaults.GuidRepresentation;
             _ipv6 = false;
             _maxConnectionIdleTime = MongoDefaults.MaxConnectionIdleTime;
@@ -108,11 +108,11 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
-        /// Gets or sets the credentials store.
+        /// Gets or sets the credentials list.
         /// </summary>
-        public MongoCredentialsStore CredentialsStore
+        public IEnumerable<MongoCredentials> CredentialsList
         {
-            get { return _credentialsStore; }
+            get { return _credentialsList; }
             set
             {
                 if (_isFrozen) { throw new InvalidOperationException("MongoClientSettings is frozen."); }
@@ -120,7 +120,9 @@ namespace MongoDB.Driver
                 {
                     throw new ArgumentNullException("value");
                 }
-                _credentialsStore = value;
+                var credentialsList = new List<MongoCredentials>(value);
+                EnsureCredentialsAreCompatibleWithEachOther(credentialsList);
+                _credentialsList = new ReadOnlyCollection<MongoCredentials>(credentialsList);
             }
         }
 
@@ -390,7 +392,7 @@ namespace MongoDB.Driver
             clientSettings.ConnectTimeout = builder.ConnectTimeout;
             if (credentials != null)
             {
-                clientSettings.CredentialsStore.Add(credentials);
+                clientSettings.CredentialsList = new[] { credentials };
             }
             clientSettings.GuidRepresentation = builder.GuidRepresentation;
             clientSettings.IPv6 = builder.IPv6;
@@ -430,7 +432,7 @@ namespace MongoDB.Driver
             clientSettings.ConnectTimeout = url.ConnectTimeout;
             if (credentials != null)
             {
-                clientSettings.CredentialsStore.Add(credentials);
+                clientSettings.CredentialsList = new[] { credentials };
             }
             clientSettings.GuidRepresentation = url.GuidRepresentation;
             clientSettings.IPv6 = url.IPv6;
@@ -451,6 +453,16 @@ namespace MongoDB.Driver
             return clientSettings;
         }
 
+        // static internal methods
+        internal static void EnsureCredentialsAreCompatibleWithEachOther(List<MongoCredentials> credentialsList)
+        {
+            var sources = new HashSet<string>(credentialsList.Select(c => c.Source));
+            if (sources.Count < credentialsList.Count)
+            {
+                throw new ArgumentException("The server has a temporary restriction no two credentials can be from the same source.");
+            }
+        }
+
         // public methods
         /// <summary>
         /// Creates a clone of the settings.
@@ -461,7 +473,7 @@ namespace MongoDB.Driver
             var clone = new MongoClientSettings();
             clone._connectionMode = _connectionMode;
             clone._connectTimeout = _connectTimeout;
-            clone._credentialsStore = _credentialsStore.Clone();
+            clone._credentialsList = _credentialsList; // it's immutable
             clone._guidRepresentation = _guidRepresentation;
             clone._ipv6 = _ipv6;
             clone._maxConnectionIdleTime = _maxConnectionIdleTime;
@@ -504,7 +516,7 @@ namespace MongoDB.Driver
                     return
                         _connectionMode == rhs._connectionMode &&
                         _connectTimeout == rhs._connectTimeout &&
-                        _credentialsStore.Equals(rhs._credentialsStore) &&
+                        _credentialsList.SequenceEqual(rhs._credentialsList) &&
                         _guidRepresentation == rhs._guidRepresentation &&
                         _ipv6 == rhs._ipv6 &&
                         _maxConnectionIdleTime == rhs._maxConnectionIdleTime &&
@@ -533,7 +545,6 @@ namespace MongoDB.Driver
         {
             if (!_isFrozen)
             {
-                _credentialsStore.Freeze();
                 _readPreference = _readPreference.FrozenCopy();
                 _writeConcern = _writeConcern.FrozenCopy();
                 _frozenHashCode = GetHashCode();
@@ -574,7 +585,7 @@ namespace MongoDB.Driver
             int hash = 17;
             hash = 37 * hash + _connectionMode.GetHashCode();
             hash = 37 * hash + _connectTimeout.GetHashCode();
-            hash = 37 * hash + _credentialsStore.GetHashCode();
+            hash = 37 * hash + _credentialsList.GetHashCode();
             hash = 37 * hash + _guidRepresentation.GetHashCode();
             hash = 37 * hash + _ipv6.GetHashCode();
             hash = 37 * hash + _maxConnectionIdleTime.GetHashCode();
@@ -611,7 +622,7 @@ namespace MongoDB.Driver
             var sb = new StringBuilder();
             sb.AppendFormat("ConnectionMode={0};", _connectionMode);
             sb.AppendFormat("ConnectTimeout={0};", _connectTimeout);
-            sb.AppendFormat("Credentials={{{0}}};", _credentialsStore);
+            sb.AppendFormat("Credentials={{{0}}};", string.Join(",", _credentialsList.Select(c => c.ToString()).ToArray()));
             sb.AppendFormat("GuidRepresentation={0};", _guidRepresentation);
             sb.AppendFormat("IPv6={0};", _ipv6);
             sb.AppendFormat("MaxConnectionIdleTime={0};", _maxConnectionIdleTime);

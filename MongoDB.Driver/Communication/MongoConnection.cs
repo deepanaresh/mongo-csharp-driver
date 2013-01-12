@@ -224,7 +224,7 @@ namespace MongoDB.Driver.Internal
             _stream = stream;
             _state = MongoConnectionState.Open;
 
-            new Authenticator(_serverInstance.Settings.CredentialsStore).Authenticate(this);
+            new Authenticator(_serverInstance.Settings.CredentialsList).Authenticate(this);
         }
 
         // this is a low level method that doesn't require a MongoServer
