@@ -723,28 +723,6 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
-        /// Gets credentials for a particular database.
-        /// </summary>
-        /// <param name="databaseName">The database name.</param>
-        /// <returns>The credentials for that database (or null).</returns>
-        [Obsolete("Use CredentialsStore instead.")]
-        public MongoCredentials GetCredentials(string databaseName)
-        {
-            if (databaseName == null)
-            {
-                throw new ArgumentNullException("databaseName");
-            }
-
-            MongoCredentials credentials;
-            if (_credentialsStore.TryGetCredentials(databaseName, out credentials))
-            {
-                return credentials;
-            }
-
-            return null;
-        }
-
-        /// <summary>
         /// Gets the hash code.
         /// </summary>
         /// <returns>The hash code.</returns>

@@ -26,7 +26,9 @@ namespace MongoDB.Driver
     public class MongoCredentialsStore : IEnumerable<MongoCredentials>
     {
         // private fields
-        private Dictionary<string, MongoCredentials> _credentialsStore = new Dictionary<string,MongoCredentials>();
+        private readonly List<MongoCredentials> _credentialsList = new List<MongoCredentials>();
+        private readonly HashSet<string> _sources = new HashSet<string>();
+
         private int _frozenHashCode;
         private string _frozenStringRepresentation;
         private bool _isFrozen;
@@ -45,8 +47,9 @@ namespace MongoDB.Driver
         /// </summary>
         public int Count
         {
-            get { return _credentialsStore.Count; }
+            get { return _credentialsList.Count; }
         }
+
         /// <summary>
         /// Gets whether the credentials store has been frozen to prevent further changes.
         /// </summary>
@@ -66,7 +69,15 @@ namespace MongoDB.Driver
             {
                 throw new ArgumentNullException("credentials");
             }
-            _credentialsStore.Add(credentials.Source, credentials);
+            if (_sources.Contains(credentials.Source))
+            {
+                // this really should be checked later when we know what version of the server we are talking to
+                throw new ArgumentException("The server currently requires that each credentials provided be from a separate source. Sorry.");
+            }
+            if (_isFrozen) { throw new InvalidOperationException("MongoCredentialsStore is frozen."); }
+
+            _credentialsList.Add(credentials);
+            _sources.Add(credentials.Source);
         }
 
         /// <summary>
@@ -76,9 +87,9 @@ namespace MongoDB.Driver
         public MongoCredentialsStore Clone()
         {
             var clone = new MongoCredentialsStore();
-            foreach (var item in _credentialsStore)
+            foreach (var credentials in _credentialsList)
             {
-                clone.Add(item.Value);
+                clone.Add(credentials);
             }
             return clone;
         }
@@ -94,24 +105,7 @@ namespace MongoDB.Driver
                 return false;
             }
 
-            if (_credentialsStore.Count != rhs._credentialsStore.Count)
-            {
-                return false;
-            }
-
-            foreach (var key in _credentialsStore.Keys)
-            {
-                if (!rhs._credentialsStore.ContainsKey(key))
-                {
-                    return false;
-                }
-                if (!_credentialsStore[key].Equals(rhs._credentialsStore[key]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return _credentialsList.SequenceEqual(rhs._credentialsList);
         }
 
         /// <summary>
@@ -145,7 +139,7 @@ namespace MongoDB.Driver
         /// <returns></returns>
         public IEnumerator<MongoCredentials> GetEnumerator()
         {
-            return _credentialsStore.Values.GetEnumerator();
+            return _credentialsList.GetEnumerator();
         }
 
         /// <summary>
@@ -161,12 +155,9 @@ namespace MongoDB.Driver
 
             // see Effective Java by Joshua Bloch
             int hash = 17;
-            var keys = _credentialsStore.Keys.ToArray();
-            Array.Sort(keys);
-            foreach (var key in keys)
+            foreach (var credentials in _credentialsList)
             {
-                hash = 37 * hash + key.GetHashCode();
-                hash = 37 * hash + _credentialsStore[key].GetHashCode();
+                hash = 37 * hash + credentials.GetHashCode();
             }
             return hash;
         }
@@ -182,35 +173,7 @@ namespace MongoDB.Driver
                 return _frozenStringRepresentation;
             }
 
-            var sb = new StringBuilder();
-            sb.Append("{");
-            var separator = "";
-            var keys = _credentialsStore.Keys.ToArray();
-            Array.Sort(keys);
-            foreach (var key in keys)
-            {
-                var credentials = _credentialsStore[key];
-                sb.Append(separator);
-                sb.Append(credentials.ToString());
-                separator = ",";
-            }
-            sb.Append("}");
-            return sb.ToString();
-        }
-
-        /// <summary>
-        /// Gets the credentials for a database.
-        /// </summary>
-        /// <param name="databaseName">The database name.</param>
-        /// <param name="credentials">The credentials.</param>
-        /// <returns>True if the store contained credentials for the database. Otherwise false.</returns>
-        public bool TryGetCredentials(string databaseName, out MongoCredentials credentials)
-        {
-            if (databaseName == null)
-            {
-                throw new ArgumentNullException("databaseName");
-            }
-            return _credentialsStore.TryGetValue(databaseName, out credentials);
+            return string.Format("{{{0}}}", string.Join(",", _credentialsList.Select(s => s.ToString()).ToArray()));
         }
 
         // explicit methods
@@ -222,7 +185,7 @@ namespace MongoDB.Driver
         /// </returns>
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
-            return _credentialsStore.Values.GetEnumerator();
+            return _credentialsList.GetEnumerator();
         }
     }
 }
