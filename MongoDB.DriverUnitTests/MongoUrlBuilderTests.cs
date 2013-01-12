@@ -37,8 +37,8 @@ namespace MongoDB.DriverUnitTests
             };
             var built = new MongoUrlBuilder()
             {
-                AuthProtocol = MongoAuthenticationProtocol.Gssapi,
-                AuthSource = "db",
+                AuthenticationProtocol = MongoAuthenticationProtocol.Gssapi,
+                AuthenticationSource = "db",
                 ConnectionMode = ConnectionMode.ReplicaSet,
                 ConnectTimeout = TimeSpan.FromSeconds(1),
                 DatabaseName = "database",
@@ -92,8 +92,8 @@ namespace MongoDB.DriverUnitTests
 
             foreach (var builder in EnumerateBuiltAndParsedBuilders(built, connectionString))
             {
-                Assert.AreEqual(MongoAuthenticationProtocol.Gssapi, builder.AuthProtocol);
-                Assert.AreEqual("db", builder.AuthSource);
+                Assert.AreEqual(MongoAuthenticationProtocol.Gssapi, builder.AuthenticationProtocol);
+                Assert.AreEqual("db", builder.AuthenticationSource);
                 Assert.AreEqual(123, builder.ComputedWaitQueueSize);
                 Assert.AreEqual(ConnectionMode.ReplicaSet, builder.ConnectionMode);
                 Assert.AreEqual(TimeSpan.FromSeconds(1), builder.ConnectTimeout);
@@ -135,11 +135,11 @@ namespace MongoDB.DriverUnitTests
         [TestCase(MongoAuthenticationProtocol.Gssapi, "mongodb://localhost/?authProtocol=GSSAPI")]
         public void TestAuthProtocol(MongoAuthenticationProtocol authProtocol, string connectionString)
         {
-            var built = new MongoUrlBuilder { Server = _localhost, AuthProtocol = authProtocol };
+            var built = new MongoUrlBuilder { Server = _localhost, AuthenticationProtocol = authProtocol };
 
             foreach (var builder in EnumerateBuiltAndParsedBuilders(built, connectionString))
             {
-                Assert.AreEqual(authProtocol, builder.AuthProtocol);
+                Assert.AreEqual(authProtocol, builder.AuthenticationProtocol);
                 Assert.AreEqual(connectionString, builder.ToString());
             }
         }
@@ -149,11 +149,11 @@ namespace MongoDB.DriverUnitTests
         [TestCase("db", "mongodb://localhost/?authSource=db")]
         public void TestAuthSource(string authSource, string connectionString)
         {
-            var built = new MongoUrlBuilder { Server = _localhost, AuthSource = authSource };
+            var built = new MongoUrlBuilder { Server = _localhost, AuthenticationSource = authSource };
 
             foreach (var builder in EnumerateBuiltAndParsedBuilders(built, connectionString))
             {
-                Assert.AreEqual(authSource, builder.AuthSource);
+                Assert.AreEqual(authSource, builder.AuthenticationSource);
                 Assert.AreEqual(connectionString, builder.ToString());
             }
         }
@@ -279,8 +279,8 @@ namespace MongoDB.DriverUnitTests
 
             foreach (var builder in EnumerateBuiltAndParsedBuilders(built, connectionString))
             {
-                Assert.AreEqual(MongoAuthenticationProtocol.Strongest, builder.AuthProtocol);
-                Assert.AreEqual(null, builder.AuthSource);
+                Assert.AreEqual(MongoAuthenticationProtocol.Strongest, builder.AuthenticationProtocol);
+                Assert.AreEqual(null, builder.AuthenticationSource);
                 Assert.AreEqual(MongoDefaults.ComputedWaitQueueSize, builder.ComputedWaitQueueSize);
                 Assert.AreEqual(ConnectionMode.Automatic, builder.ConnectionMode);
                 Assert.AreEqual(MongoDefaults.ConnectTimeout, builder.ConnectTimeout);

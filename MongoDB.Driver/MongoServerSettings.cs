@@ -209,7 +209,7 @@ namespace MongoDB.Driver
             get { return _credentialsStore; }
             set
             {
-                if (_isFrozen) { throw new InvalidOperationException("MongoClientSettings is frozen."); }
+                if (_isFrozen) { throw new InvalidOperationException("MongoServerSettings is frozen."); }
                 if (value == null)
                 {
                     throw new ArgumentNullException("value");
@@ -580,8 +580,8 @@ namespace MongoDB.Driver
         public static MongoServerSettings FromUrl(MongoUrl url)
         {
             var credentials = MongoCredentials.FromComponents(
-                url.AuthProtocol,
-                url.AuthSource,
+                url.AuthenticationProtocol,
+                url.AuthenticationSource,
                 url.DatabaseName,
                 url.Username,
                 url.Password);

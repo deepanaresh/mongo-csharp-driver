@@ -255,6 +255,7 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="username">The username.</param>
         /// <param name="password">The password.</param>
+        [Obsolete("Use AddUser that takes a MongoUser.")]
         public virtual void AddUser(string username, PasswordEvidence password)
         {
             AddUser(username, password, false);
@@ -266,6 +267,7 @@ namespace MongoDB.Driver
         /// <param name="username">The username.</param>
         /// <param name="password">The password.</param>
         /// <param name="readOnly">True if the user is a read-only user.</param>
+        [Obsolete("Use AddUser that takes a MongoUser.")]
         public virtual void AddUser(string username, PasswordEvidence password, bool readOnly)
         {
             var user = new MongoUser(username, password, readOnly);

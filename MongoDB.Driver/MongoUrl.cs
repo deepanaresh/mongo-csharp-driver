@@ -55,8 +55,8 @@ namespace MongoDB.Driver
         private static Dictionary<string, MongoUrl> __cache = new Dictionary<string, MongoUrl>();
 
         // private fields
-        private readonly MongoAuthenticationProtocol _authProtocol;
-        private readonly string _authSource;
+        private readonly MongoAuthenticationProtocol _authenticationProtocol;
+        private readonly string _authenticationSource;
         private readonly ConnectionMode _connectionMode;
         private readonly TimeSpan _connectTimeout;
         private readonly string _databaseName;
@@ -93,8 +93,8 @@ namespace MongoDB.Driver
         public MongoUrl(string url)
         {
             var builder = new MongoUrlBuilder(url); // parses url
-            _authProtocol = builder.AuthProtocol;
-            _authSource = builder.AuthSource;
+            _authenticationProtocol = builder.AuthenticationProtocol;
+            _authenticationSource = builder.AuthenticationSource;
             _connectionMode = builder.ConnectionMode;
             _connectTimeout = builder.ConnectTimeout;
             _databaseName = builder.DatabaseName;
@@ -128,6 +128,22 @@ namespace MongoDB.Driver
 
         // public properties
         /// <summary>
+        /// Gets the authentication protocol.
+        /// </summary>
+        public MongoAuthenticationProtocol AuthenticationProtocol
+        {
+            get { return _authenticationProtocol; }
+        }
+
+        /// <summary>
+        /// Gets the authentication source.
+        /// </summary>
+        public string AuthenticationSource
+        {
+            get { return _authenticationSource; }
+        }
+
+        /// <summary>
         /// Gets the actual wait queue size (either WaitQueueSize or WaitQueueMultiple x MaxConnectionPoolSize).
         /// </summary>
         public int ComputedWaitQueueSize
@@ -143,22 +159,6 @@ namespace MongoDB.Driver
                     return (int)(_waitQueueMultiple * _maxConnectionPoolSize);
                 }
             }
-        }
-
-        /// <summary>
-        /// Gets the auth protocol.
-        /// </summary>
-        public MongoAuthenticationProtocol AuthProtocol
-        {
-            get { return _authProtocol; }
-        }
-
-        /// <summary>
-        /// Gets the auth source.
-        /// </summary>
-        public string AuthSource
-        {
-            get { return _authSource; }
         }
 
         /// <summary>

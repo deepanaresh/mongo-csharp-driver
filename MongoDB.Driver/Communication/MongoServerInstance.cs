@@ -351,7 +351,7 @@ namespace MongoDB.Driver
         /// </summary>
         public void VerifyState()
         {
-            var connection = _connectionPool.AcquireConnection( _stateVerificationAcquireConnectionOptions);
+            var connection = _connectionPool.AcquireConnection(_stateVerificationAcquireConnectionOptions);
             try
             {
                 try
@@ -375,10 +375,7 @@ namespace MongoDB.Driver
         /// <summary>
         /// Acquires the connection.
         /// </summary>
-        /// <returns>
-        /// A MongoConnection.
-        /// </returns>
-        /// <exception cref="System.InvalidOperationException"></exception>
+        /// <returns>A MongoConnection.</returns>
         internal MongoConnection AcquireConnection()
         {
             lock (_serverInstanceLock)

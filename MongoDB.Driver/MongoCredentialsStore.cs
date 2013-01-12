@@ -70,30 +70,6 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
-        /// Adds the credentials for a database to the store.
-        /// </summary>
-        /// <param name="databaseName">The database name.</param>
-        /// <param name="credentials">The credentials.</param>
-        [Obsolete("Use Add instead.")]
-        public void AddCredentials(string databaseName, MongoCredentials credentials)
-        {
-            if (_isFrozen) { throw new InvalidOperationException("MongoCredentialsStore is frozen."); }
-            if (databaseName == null)
-            {
-                throw new ArgumentNullException("databaseName");
-            }
-            if (credentials == null)
-            {
-                throw new ArgumentNullException("credentials");
-            }
-            if (databaseName != credentials.Source)
-            {
-                throw new ArgumentException("databaseName must be the same as the credentials source.", "databaseName");
-            }
-            _credentialsStore.Add(databaseName, credentials);
-        }
-
-        /// <summary>
         /// Creates a clone of the credentials store.
         /// </summary>
         /// <returns>A clone of the credentials store.</returns>

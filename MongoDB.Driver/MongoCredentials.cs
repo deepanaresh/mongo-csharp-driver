@@ -142,7 +142,7 @@ namespace MongoDB.Driver
         /// Creates GSSAPI credentials.
         /// </summary>
         /// <returns>Credentials for GSSAPI.</returns>
-        public static MongoCredentials Gssapi()
+        public static MongoCredentials CreateGssapiCredentials()
         {
             var username = string.Format("{0}@{1}", Environment.UserName, Environment.UserDomainName);
             return new MongoCredentials(
@@ -157,7 +157,7 @@ namespace MongoDB.Driver
         /// <param name="username">The username.</param>
         /// <param name="password">The password.</param>
         /// <returns>Credentials for GSSAPI.</returns>
-        public static MongoCredentials Gssapi(string username, string password)
+        public static MongoCredentials CreateGssapiCredentials(string username, string password)
         {
             return new MongoCredentials(
                 MongoAuthenticationProtocol.Gssapi,
@@ -171,7 +171,7 @@ namespace MongoDB.Driver
         /// <param name="username">The username.</param>
         /// <param name="password">The password.</param>
         /// <returns>Credentials for GSSAPI.</returns>
-        public static MongoCredentials Gssapi(string username, SecureString password)
+        public static MongoCredentials CreateGssapiCredentials(string username, SecureString password)
         {
             return new MongoCredentials(
                 MongoAuthenticationProtocol.Gssapi,
@@ -186,7 +186,7 @@ namespace MongoDB.Driver
         /// <param name="username">The username.</param>
         /// <param name="password">The password.</param>
         /// <returns></returns>
-        public static MongoCredentials Strongest(string databaseName, string username, string password)
+        public static MongoCredentials CreateStrongestCredentials(string databaseName, string username, string password)
         {
             return new MongoCredentials(
                 MongoAuthenticationProtocol.Strongest,
@@ -201,7 +201,7 @@ namespace MongoDB.Driver
         /// <param name="username">The username.</param>
         /// <param name="password">The password.</param>
         /// <returns></returns>
-        public static MongoCredentials Strongest(string databaseName, string username, SecureString password)
+        public static MongoCredentials CreateStrongestCredentials(string databaseName, string username, SecureString password)
         {
             return new MongoCredentials(
                 MongoAuthenticationProtocol.Strongest,
@@ -218,7 +218,7 @@ namespace MongoDB.Driver
         public bool Equals(MongoCredentials rhs)
         {
             if (object.ReferenceEquals(rhs, null) || GetType() != rhs.GetType()) { return false; }
-            return _identity == rhs._identity && _evidence == rhs._evidence;
+            return _identity == rhs._identity && _evidence == rhs._evidence && _protocol == rhs._protocol;
         }
 
         /// <summary>
@@ -241,6 +241,7 @@ namespace MongoDB.Driver
             int hash = 17;
             hash = 37 * hash + _identity.GetHashCode();
             hash = 37 * hash + _evidence.GetHashCode();
+            hash = 37 * hash + _protocol.GetHashCode();
             return hash;
         }
 
@@ -260,11 +261,11 @@ namespace MongoDB.Driver
             switch (protocol)
             {
                 case MongoAuthenticationProtocol.Strongest:
-                    if(username == null || password == null)
+                    if(string.IsNullOrEmpty(username) || password == null)
                     {
                         return null;
                     }
-                    return MongoCredentials.Strongest(source, username, password);
+                    return MongoCredentials.CreateStrongestCredentials(source, username, password);
                 case MongoAuthenticationProtocol.Gssapi:
                     if (source != null && source != "$external")
                     {
@@ -272,9 +273,9 @@ namespace MongoDB.Driver
                     }
                     if (username == null || password == null)
                     {
-                        return MongoCredentials.Gssapi();
+                        return MongoCredentials.CreateGssapiCredentials();
                     }
-                    return MongoCredentials.Gssapi(username, password);
+                    return MongoCredentials.CreateGssapiCredentials(username, password);
                 default:
                     throw new NotSupportedException(string.Format("Unsupported MongoAuthenticationProtocol {0}.", protocol));
             }

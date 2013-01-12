@@ -31,8 +31,8 @@ namespace MongoDB.Driver
     public class MongoUrlBuilder
     {
         // private fields
-        private MongoAuthenticationProtocol _authProtocol;
-        private string _authSource;
+        private MongoAuthenticationProtocol _authenticationProtocol;
+        private string _authenticationSource;
         private ConnectionMode _connectionMode;
         private TimeSpan _connectTimeout;
         private string _databaseName;
@@ -66,8 +66,8 @@ namespace MongoDB.Driver
         /// </summary>
         public MongoUrlBuilder()
         {
-            _authProtocol = MongoAuthenticationProtocol.Strongest;
-            _authSource = null;
+            _authenticationProtocol = MongoAuthenticationProtocol.Strongest;
+            _authenticationSource = null;
             _connectionMode = ConnectionMode.Automatic;
             _connectTimeout = MongoDefaults.ConnectTimeout;
             _databaseName = null;
@@ -108,21 +108,21 @@ namespace MongoDB.Driver
 
         // public properties
         /// <summary>
-        /// Gets or sets the auth protocol.
+        /// Gets or sets the authentication protocol.
         /// </summary>
-        public MongoAuthenticationProtocol AuthProtocol
+        public MongoAuthenticationProtocol AuthenticationProtocol
         {
-            get { return _authProtocol; }
-            set { _authProtocol = value; }
+            get { return _authenticationProtocol; }
+            set { _authenticationProtocol = value; }
         }
 
         /// <summary>
-        /// Gets or sets the auth source.
+        /// Gets or sets the authentication source.
         /// </summary>
-        public string AuthSource
+        public string AuthenticationSource
         {
-            get { return _authSource; }
-            set { _authSource = value; }
+            get { return _authenticationSource; }
+            set { _authenticationSource = value; }
         }
 
         /// <summary>
@@ -825,10 +825,10 @@ namespace MongoDB.Driver
                         switch (name.ToLower())
                         {
                             case "authprotocol":
-                                _authProtocol = ParseAuthProtocol(name, value);
+                                _authenticationProtocol = ParseAuthProtocol(name, value);
                                 break;
                             case "authsource":
-                                _authSource = value;
+                                _authenticationSource = value;
                                 break;
                             case "connect":
                                 ConnectionMode = ParseConnectionMode(name, value);
@@ -975,7 +975,7 @@ namespace MongoDB.Driver
         {
             StringBuilder url = new StringBuilder();
             url.Append("mongodb://");
-            if (_username != null)
+            if (!string.IsNullOrEmpty(_username))
             {
                 url.Append(Uri.EscapeDataString(_username));
                 if (_password != null)
@@ -1012,13 +1012,13 @@ namespace MongoDB.Driver
                 url.Append(_databaseName);
             }
             var query = new StringBuilder();
-            if (_authProtocol != MongoAuthenticationProtocol.Strongest)
+            if (_authenticationProtocol != MongoAuthenticationProtocol.Strongest)
             {
                 query.Append("authProtocol=GSSAPI;");
             }
-            if (_authSource != null)
+            if (_authenticationSource != null)
             {
-                query.AppendFormat("authSource={0};", _authSource);
+                query.AppendFormat("authSource={0};", _authenticationSource);
             }
             if (_ipv6)
             {

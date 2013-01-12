@@ -1,4 +1,19 @@
-﻿using System;
+﻿/* Copyright 2010-2013 10gen Inc.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+* http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -15,7 +30,7 @@ namespace MongoDB.Driver
     {
         // private fields
         private readonly SecureString _securePassword;
-        private readonly string _hash;
+        private readonly string _digest;
 
         // constructors
         /// <summary>
@@ -24,8 +39,9 @@ namespace MongoDB.Driver
         /// <param name="password">The password.</param>
         public PasswordEvidence(SecureString password)
         {
-            _securePassword = password;
-            _hash = GenerateHash(password);
+            _securePassword = password.Copy();
+            _securePassword.MakeReadOnly();
+            _digest = GenerateDigest(password);
         }
 
         /// <summary>
@@ -65,7 +81,7 @@ namespace MongoDB.Driver
         {
             if (object.ReferenceEquals(rhs, null) || GetType() != rhs.GetType()) { return false; }
 
-            return _hash == ((PasswordEvidence)rhs)._hash;
+            return _digest == ((PasswordEvidence)rhs)._digest;
         }
 
         /// <summary>
@@ -76,7 +92,7 @@ namespace MongoDB.Driver
         /// </returns>
         public override int GetHashCode()
         {
-            return 17 * 37 + _hash.GetHashCode();
+            return 17 * 37 + _digest.GetHashCode();
         }
 
         // private static methods
@@ -89,6 +105,7 @@ namespace MongoDB.Driver
                 {
                     secureStr.AppendChar(c);
                 }
+                secureStr.MakeReadOnly();
                 return secureStr;
             }
 
@@ -120,7 +137,7 @@ namespace MongoDB.Driver
         /// <summary>
         /// Computes the hash value of the secured string 
         /// </summary>
-        private static string GenerateHash(SecureString secureString)
+        private static string GenerateDigest(SecureString secureString)
         {
             IntPtr unmanagedRef = Marshal.SecureStringToBSTR(secureString);
             // stored with 0's in between each character...

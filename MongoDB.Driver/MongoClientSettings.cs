@@ -419,8 +419,8 @@ namespace MongoDB.Driver
         public static MongoClientSettings FromUrl(MongoUrl url)
         {
             var credentials = MongoCredentials.FromComponents(
-                url.AuthProtocol,
-                url.AuthSource,
+                url.AuthenticationProtocol,
+                url.AuthenticationSource,
                 url.DatabaseName,
                 url.Username,
                 url.Password);
