@@ -221,7 +221,7 @@ namespace MongoDB.Bson.Serialization
                     var memberMapBlock = ~memberMapBitArray[bitArrayIndex]; // notice that bits are flipped so 1's are now the missing elements
 
                     // work through this memberMapBlock of 32 elements
-                    for (;;)
+                    while (true)
                     {
                         // examine missing elements (memberMapBlock is shifted right as we work through the block)
                         for (; (memberMapBlock & 1) != 0; ++memberMapIndex, memberMapBlock >>= 1)
@@ -244,6 +244,10 @@ namespace MongoDB.Bson.Serialization
                             if (obj != null)
                             {
                                 memberMap.ApplyDefaultValue(obj);
+                            }
+                            else if (memberMap.IsDefaultValueSpecified && !memberMap.IsReadOnly)
+                            {
+                                values[memberMap.ElementName] = memberMap.DefaultValue;
                             }
                         }
 
@@ -467,18 +471,13 @@ namespace MongoDB.Bson.Serialization
         private BsonCreatorMap ChooseBestCreator(Dictionary<string, object> values)
         {
             BsonCreatorMap bestCreatorMap = null;
+            var bestArgumentCount = 0;
+            var bestDefaultValueCount = 0;
             foreach (var creatorMap in _classMap.CreatorMaps)
             {
-                if (CreatorMatches(creatorMap, values))
+                if (creatorMap.IsBetterMatch(bestCreatorMap, values, ref bestArgumentCount, ref bestDefaultValueCount))
                 {
-                    if (bestCreatorMap == null || CreatorIsBetterMatch(creatorMap, bestCreatorMap))
-                    {
-                        bestCreatorMap = creatorMap;
-                    }
-                    else if (!CreatorIsBetterMatch(bestCreatorMap, creatorMap))
-                    {
-                        throw new BsonSerializationException("Unable to determine best matching creator.");
-                    }
+                    bestCreatorMap = creatorMap;
                 }
             }
             if (bestCreatorMap == null)
@@ -492,25 +491,7 @@ namespace MongoDB.Bson.Serialization
         private object CreateInstanceUsingCreator(Dictionary<string, object> values)
         {
             var creatorMap = ChooseBestCreator(values);
-
-            // get the values for the arguments to be passed to the creator delegate
-            var arguments = new List<object>();
-            foreach (var elementName in creatorMap.ElementNames)
-            {
-                object argument;
-                if (values.TryGetValue(elementName, out argument))
-                {
-                    values.Remove(elementName);
-                }
-                else if (!creatorMap.TryGetDefaultValue(elementName, out argument))
-                {
-                    // shouldn't happen unless there is a bug in ChooseBestCreator
-                    throw new BsonInternalException();
-                }
-                arguments.Add(argument);
-            }
-
-            var obj = creatorMap.Delegate.DynamicInvoke(arguments.ToArray());
+            var obj = creatorMap.CreateInstance(values); // removes values consumed
 
             var supportsInitialization = obj as ISupportInitialize;
             if (supportsInitialization != null)
@@ -537,26 +518,6 @@ namespace MongoDB.Bson.Serialization
             }
 
             return obj;
-        }
-
-        private bool CreatorIsBetterMatch(BsonCreatorMap lhs, BsonCreatorMap rhs)
-        {
-            // a creator is considered a better match if it has more parameters
-            return lhs.Arguments.Count() > rhs.Arguments.Count();
-        }
-
-        private bool CreatorMatches(BsonCreatorMap creatorMap, Dictionary<string, object> values)
-        {
-            // a creator is a match if we have a value for each parameter (either a deserialized value or a default value)
-            foreach (var elementName in creatorMap.ElementNames)
-            {
-                if (!values.ContainsKey(elementName) && ! creatorMap.HasDefaultValue(elementName))
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
 
         private void DeserializeExtraElement(

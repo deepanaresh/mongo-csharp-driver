@@ -156,6 +156,10 @@ namespace MongoDB.Bson.Serialization
         /// <returns>The creator map.</returns>
         public BsonCreatorMap SetArguments(IEnumerable<MemberInfo> arguments)
         {
+            if (arguments == null)
+            {
+                throw new ArgumentNullException("arguments");
+            }
             if (_isFrozen) { ThrowFrozenException(); }
             _arguments = new List<MemberInfo>(arguments);
             return this;
@@ -168,6 +172,10 @@ namespace MongoDB.Bson.Serialization
         /// <returns>The creator map.</returns>
         public BsonCreatorMap SetArguments(IEnumerable<string> argumentNames)
         {
+            if (argumentNames == null)
+            {
+                throw new ArgumentNullException("argumentNames");
+            }
             if (_isFrozen) { ThrowFrozenException(); }
 
             var arguments = new List<MemberInfo>();
@@ -203,6 +211,85 @@ namespace MongoDB.Bson.Serialization
         {
             if (!_isFrozen) { ThrowNotFrozenException(); }
             return _defaultValues.TryGetValue(elementName, out defaultValue);
+        }
+
+        // internal methods
+        internal object CreateInstance(Dictionary<string, object> values)
+        {
+            var arguments = new List<object>();
+
+            // get the values for the arguments to be passed to the creator delegate
+            foreach (var elementName in _elementNames)
+            {
+                object argument;
+                if (values.TryGetValue(elementName, out argument))
+                {
+                    values.Remove(elementName);
+                }
+                else if (!_defaultValues.TryGetValue(elementName, out argument))
+                {
+                    // shouldn't happen unless there is a bug in ChooseBestCreator
+                    throw new BsonInternalException();
+                }
+                arguments.Add(argument);
+            }
+
+            return _delegate.DynamicInvoke(arguments.ToArray());
+        }
+
+        internal bool IsBetterMatch(BsonCreatorMap bestCreatorMap, Dictionary<string, object> values, ref int bestArgumentCount, ref int bestDefaultValueCount)
+        {
+            int argumentCount;
+            int defaultValueCount;
+            if (!IsMatch(values, out argumentCount, out defaultValueCount))
+            {
+                return false;
+            }
+
+            // find all the false conditions first so we can assign to the ref parameters once at the end
+            if (bestCreatorMap != null)
+            {
+                if (argumentCount < bestArgumentCount)
+                {
+                    return false;
+                }
+                else if (argumentCount == bestArgumentCount)
+                {
+                    if (defaultValueCount <= bestDefaultValueCount)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            bestArgumentCount = argumentCount;
+            bestDefaultValueCount = defaultValueCount;
+            return true;
+        }
+
+        internal bool IsMatch(Dictionary<string, object> values, out int argumentCount, out int defaultValueCount)
+        {
+            argumentCount = 0;
+            defaultValueCount = 0;
+
+            // a creator is a match if we have a value for each parameter (either a deserialized value or a default value)
+            foreach (var elementName in _elementNames)
+            {
+                if (values.ContainsKey(elementName))
+                {
+                    argumentCount++;
+                }
+                else if (_defaultValues.ContainsKey(elementName))
+                {
+                    defaultValueCount++;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         // private methods
