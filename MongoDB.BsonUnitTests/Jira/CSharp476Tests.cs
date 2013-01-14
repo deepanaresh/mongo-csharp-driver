@@ -24,96 +24,513 @@ namespace MongoDB.BsonUnitTests.Jira
     [TestFixture]
     public class CSharp476Tests
     {
-        public class C
+        // make sure class maps are registered before tests run
+        static CSharp476Tests()
         {
+            TDelegate.RegisterClassMap();
+            TExpressionCallingConstructor.RegisterClassMap();
+            TExpressionCallingFactoryMethod.RegisterClassMap();
+            TExpressionCallingArbitraryCode.RegisterClassMap();
+        }
+
+        public class TBsonConstructor
+        {
+            private int _chosen;
             private int _x;
             private int _y;
 
-            public C(int x, int y)
+            [BsonConstructor]
+            public TBsonConstructor()
             {
+                _chosen = 0;
+            }
+
+            [BsonConstructor] // let convention find the matching properties
+            public TBsonConstructor(int x)
+            {
+                _chosen = 1;
+                _x = x;
+            }
+
+            [BsonConstructor] // let convention find the matching properties
+            public TBsonConstructor(int x, int y)
+            {
+                _chosen = 2;
                 _x = x;
                 _y = y;
             }
 
-            [BsonElement] // opt-in read-only property
+            [BsonIgnore]
+            public int Chosen { get { return _chosen; } }
+            [BsonElement]
             public int X { get { return _x; } }
-            [BsonElement] // opt-in read-only property
+            [BsonElement]
+            [BsonDefaultValue(2)]
             public int Y { get { return _y; } }
         }
 
-        public class D : C
+        [Test]
+        public void TestTBsonConstructor()
         {
+            var json = "{ }";
+            var r = BsonSerializer.Deserialize<TBsonConstructor>(json);
+            Assert.AreEqual(0, r.Chosen);
+            Assert.AreEqual(0, r.X);
+            Assert.AreEqual(0, r.Y); // note: unable to apply default value
+
+            json = "{ X : 1 }";
+            r = BsonSerializer.Deserialize<TBsonConstructor>(json);
+            Assert.AreEqual(2, r.Chosen); // passed default value to constructor
+            Assert.AreEqual(1, r.X);
+            Assert.AreEqual(2, r.Y);
+
+            json = "{ X : 1, Y : 3 }";
+            r = BsonSerializer.Deserialize<TBsonConstructor>(json);
+            Assert.AreEqual(2, r.Chosen);
+            Assert.AreEqual(1, r.X);
+            Assert.AreEqual(3, r.Y);
+        }
+
+        public class TBsonFactoryMethod
+        {
+            internal int _chosen;
+            internal int _x;
+            internal int _y;
+
+            [BsonIgnore]
+            public int Chosen { get { return _chosen; } }
+            [BsonElement]
+            public int X { get { return _x; } }
+            [BsonElement]
+            [BsonDefaultValue(2)]
+            public int Y { get { return _y; } }
+
+            [BsonFactoryMethod]
+            public static TBsonFactoryMethod FactoryMethod()
+            {
+                var instance = new TBsonFactoryMethod();
+                instance._chosen = 0;
+                return instance;
+            }
+
+            [BsonFactoryMethod("X")]
+            public static TBsonFactoryMethod FactoryMethod(int x)
+            {
+                var instance = new TBsonFactoryMethod();
+                instance._chosen = 1;
+                instance._x = x;
+                return instance;
+            }
+
+            [BsonFactoryMethod("X", "Y")]
+            public static TBsonFactoryMethod FactoryMethod(int x, int y)
+            {
+                var instance = new TBsonFactoryMethod();
+                instance._chosen = 2;
+                instance._x = x;
+                instance._y = y;
+                return instance;
+            }
+        }
+
+        [Test]
+        public void TestTBsonFactoryMethod()
+        {
+            var json = "{ }";
+            var r = BsonSerializer.Deserialize<TBsonFactoryMethod>(json);
+            Assert.AreEqual(0, r.Chosen);
+            Assert.AreEqual(0, r.X);
+            Assert.AreEqual(0, r.Y); // note: unable to apply default value
+
+            json = "{ X : 1 }";
+            r = BsonSerializer.Deserialize<TBsonFactoryMethod>(json);
+            Assert.AreEqual(2, r.Chosen); // passed default value to factory method
+            Assert.AreEqual(1, r.X);
+            Assert.AreEqual(2, r.Y);
+
+            json = "{ X : 1, Y : 3 }";
+            r = BsonSerializer.Deserialize<TBsonFactoryMethod>(json);
+            Assert.AreEqual(2, r.Chosen);
+            Assert.AreEqual(1, r.X);
+            Assert.AreEqual(3, r.Y);
+        }
+
+        public class TDelegate
+        {
+            private int _chosen;
+            private int _x;
+            private int _y;
+
+            public TDelegate()
+            {
+                _chosen = 0;
+            }
+
+            public TDelegate(int x)
+            {
+                _chosen = 1;
+                _x = x;
+            }
+
+            public TDelegate(int x, int y)
+            {
+                _chosen = 2;
+                _x = x;
+                _y = y;
+            }
+
+            [BsonIgnore]
+            public int Chosen { get { return _chosen; } }
+            [BsonElement]
+            public int X { get { return _x; } }
+            [BsonElement]
+            [BsonDefaultValue(2)]
+            public int Y { get { return _y; } }
+
+            public static void RegisterClassMap()
+            {
+                BsonClassMap.RegisterClassMap<TDelegate>(cm =>
+                {
+                    cm.AutoMap();
+                    cm.MapCreator((Func<TDelegate>)(() => new TDelegate()));
+                    cm.MapCreator((Func<int, TDelegate>)((int x) => new TDelegate(x)), "X");
+                    cm.MapCreator((Func<int, int, TDelegate>)((int x, int y) => new TDelegate(x, y)), "X", "Y");
+                });
+            }
+        }
+
+        [Test]
+        public void TestTDelegate()
+        {
+            var json = "{ }";
+            var r = BsonSerializer.Deserialize<TDelegate>(json);
+            Assert.AreEqual(0, r.Chosen);
+            Assert.AreEqual(0, r.X);
+            Assert.AreEqual(0, r.Y); // note: unable to apply default value
+
+            json = "{ X : 1 }";
+            r = BsonSerializer.Deserialize<TDelegate>(json);
+            Assert.AreEqual(2, r.Chosen); // passed default value to delegate
+            Assert.AreEqual(1, r.X);
+            Assert.AreEqual(2, r.Y);
+
+            json = "{ X : 1, Y : 3 }";
+            r = BsonSerializer.Deserialize<TDelegate>(json);
+            Assert.AreEqual(2, r.Chosen);
+            Assert.AreEqual(1, r.X);
+            Assert.AreEqual(3, r.Y);
+        }
+
+        public class TExpressionCallingConstructor
+        {
+            private int _chosen;
+            private int _x;
+            private int _y;
+
+            public TExpressionCallingConstructor()
+            {
+                _chosen = 0;
+            }
+
+            public TExpressionCallingConstructor(int x)
+            {
+                _chosen = 1;
+                _x = x;
+            }
+
+            public TExpressionCallingConstructor(int x, int y)
+            {
+                _chosen = 2;
+                _x = x;
+                _y = y;
+            }
+
+            [BsonIgnore]
+            public int Chosen { get { return _chosen; } }
+            [BsonElement]
+            public int X { get { return _x; } }
+            [BsonElement]
+            [BsonDefaultValue(2)]
+            public int Y { get { return _y; } }
+
+            public static void RegisterClassMap()
+            {
+                BsonClassMap.RegisterClassMap<TExpressionCallingConstructor>(cm =>
+                {
+                    cm.AutoMap();
+                    cm.MapCreator(c => new TExpressionCallingConstructor());
+                    cm.MapCreator(c => new TExpressionCallingConstructor(c.X));
+                    cm.MapCreator(c => new TExpressionCallingConstructor(c.X, c.Y));
+                });
+            }
+        }
+
+        [Test]
+        public void TestTExpressionCallingConstructor()
+        {
+            var json = "{ }";
+            var r = BsonSerializer.Deserialize<TExpressionCallingConstructor>(json);
+            Assert.AreEqual(0, r.Chosen);
+            Assert.AreEqual(0, r.X);
+            Assert.AreEqual(0, r.Y); // note: unable to apply default value
+
+            json = "{ X : 1 }";
+            r = BsonSerializer.Deserialize<TExpressionCallingConstructor>(json);
+            Assert.AreEqual(2, r.Chosen); // passed default value to delegate
+            Assert.AreEqual(1, r.X);
+            Assert.AreEqual(2, r.Y);
+
+            json = "{ X : 1, Y : 3 }";
+            r = BsonSerializer.Deserialize<TExpressionCallingConstructor>(json);
+            Assert.AreEqual(2, r.Chosen);
+            Assert.AreEqual(1, r.X);
+            Assert.AreEqual(3, r.Y);
+        }
+
+        public class TExpressionCallingFactoryMethod
+        {
+            internal int _chosen;
+            internal int _x;
+            internal int _y;
+
+            [BsonIgnore]
+            public int Chosen { get { return _chosen; } }
+            [BsonElement]
+            public int X { get { return _x; } }
+            [BsonElement]
+            [BsonDefaultValue(2)]
+            public int Y { get { return _y; } }
+
+            public static TExpressionCallingFactoryMethod FactoryMethod()
+            {
+                var instance = new TExpressionCallingFactoryMethod();
+                instance._chosen = 0;
+                return instance;
+            }
+
+            public static TExpressionCallingFactoryMethod FactoryMethod(int x)
+            {
+                var instance = new TExpressionCallingFactoryMethod();
+                instance._chosen = 1;
+                instance._x = x;
+                return instance;
+            }
+
+            public static TExpressionCallingFactoryMethod FactoryMethod(int x, int y)
+            {
+                var instance = new TExpressionCallingFactoryMethod();
+                instance._chosen = 2;
+                instance._x = x;
+                instance._y = y;
+                return instance;
+            }
+
+            public static void RegisterClassMap()
+            {
+                BsonClassMap.RegisterClassMap<TExpressionCallingFactoryMethod>(cm =>
+                {
+                    cm.AutoMap();
+                    cm.MapCreator(c => TExpressionCallingFactoryMethod.FactoryMethod());
+                    cm.MapCreator(c => TExpressionCallingFactoryMethod.FactoryMethod(c.X));
+                    cm.MapCreator(c => TExpressionCallingFactoryMethod.FactoryMethod(c.X, c.Y));
+                });
+            }
+        }
+
+        [Test]
+        public void TestTExpressionCallingFactoryMethod()
+        {
+            var json = "{ }";
+            var r = BsonSerializer.Deserialize<TExpressionCallingFactoryMethod>(json);
+            Assert.AreEqual(0, r.Chosen);
+            Assert.AreEqual(0, r.X);
+            Assert.AreEqual(0, r.Y); // note: unable to apply default value
+
+            json = "{ X : 1 }";
+            r = BsonSerializer.Deserialize<TExpressionCallingFactoryMethod>(json);
+            Assert.AreEqual(2, r.Chosen); // passed default value to factory method
+            Assert.AreEqual(1, r.X);
+            Assert.AreEqual(2, r.Y);
+
+            json = "{ X : 1, Y : 3 }";
+            r = BsonSerializer.Deserialize<TExpressionCallingFactoryMethod>(json);
+            Assert.AreEqual(2, r.Chosen);
+            Assert.AreEqual(1, r.X);
+            Assert.AreEqual(3, r.Y);
+        }
+
+        public class TExpressionCallingArbitraryCode
+        {
+            internal int _chosen;
+            internal int _x;
+            internal int _y;
+
+            public TExpressionCallingArbitraryCode()
+            {
+                _chosen = 0;
+            }
+
+
+            public TExpressionCallingArbitraryCode(int x)
+            {
+                _chosen = 1;
+                _x = x;
+            }
+
+            public TExpressionCallingArbitraryCode(int x, int y)
+            {
+                _chosen = 2;
+                _x = x;
+                _y = y;
+            }
+
+            [BsonIgnore]
+            public int Chosen { get { return _chosen; } }
+            [BsonElement]
+            public int X { get { return _x; } }
+            [BsonElement]
+            [BsonDefaultValue(2)]
+            public int Y { get { return _y; } }
+
+            public static TExpressionCallingArbitraryCode FactoryMethod(int x)
+            {
+                var instance = new TExpressionCallingArbitraryCode();
+                instance._chosen = -1;
+                instance._x = x;
+                return instance;
+            }
+
+            public static TExpressionCallingArbitraryCode FactoryMethod(int x, int y)
+            {
+                var instance = new TExpressionCallingArbitraryCode();
+                instance._chosen = -2;
+                instance._x = x;
+                instance._y = y;
+                return instance;
+            }
+
+            public static void RegisterClassMap()
+            {
+                BsonClassMap.RegisterClassMap<TExpressionCallingArbitraryCode>(cm =>
+                {
+                    cm.AutoMap();
+                    cm.MapCreator(c => (c.X >= 0) ? new TExpressionCallingArbitraryCode(c.X) : TExpressionCallingArbitraryCode.FactoryMethod(c.X));
+                    cm.MapCreator(c => (c.X >= 0) ? new TExpressionCallingArbitraryCode(c.X, c.Y) : TExpressionCallingArbitraryCode.FactoryMethod(c.X, c.Y));
+                });
+            }
+        }
+
+        [Test]
+        public void TestTExpressionCallingArbitraryCode()
+        {
+            var json = "{ X : 1 }";
+            var r = BsonSerializer.Deserialize<TExpressionCallingArbitraryCode>(json);
+            Assert.AreEqual(2, r.Chosen); // passed default value to factory method
+            Assert.AreEqual(1, r.X);
+            Assert.AreEqual(2, r.Y);
+
+            json = "{ X : 1, Y : 3 }";
+            r = BsonSerializer.Deserialize<TExpressionCallingArbitraryCode>(json);
+            Assert.AreEqual(2, r.Chosen);
+            Assert.AreEqual(1, r.X);
+            Assert.AreEqual(3, r.Y);
+
+            json = "{ X : -1 }";
+            r = BsonSerializer.Deserialize<TExpressionCallingArbitraryCode>(json);
+            Assert.AreEqual(-2, r.Chosen); // passed default value to factory method
+            Assert.AreEqual(-1, r.X);
+            Assert.AreEqual(2, r.Y);
+
+            json = "{ X : -1, Y : 3 }";
+            r = BsonSerializer.Deserialize<TExpressionCallingArbitraryCode>(json);
+            Assert.AreEqual(-2, r.Chosen);
+            Assert.AreEqual(-1, r.X);
+            Assert.AreEqual(3, r.Y);
+        }
+
+        public class TBaseClass
+        {
+            protected int _chosen;
+            private int _x;
+
+            [BsonConstructor]
+            public TBaseClass()
+            {
+                _chosen = 0;
+            }
+
+            [BsonConstructor("X")]
+            public TBaseClass(int x)
+            {
+                _chosen = 1;
+                _x = x;
+            }
+
+            [BsonIgnore]
+            public int Chosen { get { return _chosen; } }
+            [BsonElement]
+            public int X { get { return _x; } }
+        }
+
+        public class TDerivedClass : TBaseClass
+        {
+            private int _y;
             private int _z;
 
-            //[BsonConstructor] // NamedParameterCreatorMapConvention will match the parameters to members
-            //[BsonConstructor("X", "Y")]
-            public D(int x, int y)
-                : base(x, y)
+            [BsonConstructor]
+            public TDerivedClass() : base()
             {
             }
 
-            //[BsonConstructor] // NamedParameterCreatorMapConvention will match the parameters to members
-            //[BsonConstructor("X", "Y")]
-            public D(int x, int y, int z)
-                : base(x, y)
+            [BsonConstructor("X")] // note: "X" is defined in the base class
+            public TDerivedClass(int x) : base(x)
             {
-                _z = z;
             }
 
-            //[BsonFactoryMethod] // NamedParameterCreatorMapConvention will match the parameters to members
-            //[BsonFactoryMethod("X", "Y")]
-            public static D Create(int x, int y)
+            [BsonConstructor] // let convention find the matching properties
+            public TDerivedClass(int x, int y) : base(x)
             {
-                return new D(x, y);
+                _chosen = 2;
+                _y = y;
             }
 
+            [BsonElement]
+            [BsonDefaultValue(2)]
+            public int Y { get { return _y; } }
+            [BsonDefaultValue(3)]
             public int Z { get { return _z; } set { _z = value; } }
         }
 
-        static CSharp476Tests()
-        {
-            BsonClassMap.RegisterClassMap<C>(cm =>
-            {
-                cm.MapMember(c => c.X);
-                cm.MapMember(c => c.Y);
-            });
-
-            BsonClassMap.RegisterClassMap<D>(cm =>
-            {
-                var ccm = (BsonClassMap<C>)BsonClassMap.LookupClassMap(typeof(C));
-
-                cm.MapMember(d => d.Z);
-
-                var constructorInfo = typeof(D).GetConstructor(new[] { typeof(int), typeof(int) });
-                cm.MapConstructor(constructorInfo, "X", "Y");
-
-                var methodInfo = typeof(D).GetMethod("Create");
-                //cm.MapFactoryMethod(methodInfo, "X", "Y");
-
-                var @delegate = (Func<int, int, D>)((int x, int y) => { var a = x; var b = y; return D.Create(a, b); }); // arbitrary code
-                //cm.MapCreator(@delegate, "X", "Y"); // example using a delegate
-                //cm.MapCreator(d => new D(d.X, d.Y)); // example using a constructor
-                cm.MapCreator(d => new D(d.X, d.Y, d.Z)); // example using a constructor
-                //cm.MapCreator(d => D.Create(d.X, d.Y)); // example using a factory method
-            });
-        }
-
         [Test]
-        public void TestDeserialization()
+        public void TestTDerivedClass()
         {
-            var json = "{ X : 1, Y : 2, Z : 3 }";
-            var d = BsonSerializer.Deserialize<D>(json);
-            Assert.AreEqual(1, d.X);
-            Assert.AreEqual(2, d.Y);
-            Assert.AreEqual(3, d.Z);
-        }
+            var json = "{ }";
+            var r = BsonSerializer.Deserialize<TDerivedClass>(json);
+            Assert.AreEqual(0, r.Chosen);
+            Assert.AreEqual(0, r.X);
+            Assert.AreEqual(0, r.Y); // note: unable to apply default value
+            Assert.AreEqual(3, r.Z);
 
-        [Test]
-        public void TestSerialization()
-        {
-            var d = new D(1, 2) { Z = 3 };
-            var expected = "{ 'X' : 1, 'Y' : 2, 'Z' : 3 }".Replace("'", "\"");
-            Assert.AreEqual(expected, d.ToJson());
+            json = "{ X : 1 }";
+            r = BsonSerializer.Deserialize<TDerivedClass>(json);
+            Assert.AreEqual(2, r.Chosen); // passed default value to constructor
+            Assert.AreEqual(1, r.X);
+            Assert.AreEqual(2, r.Y);
+            Assert.AreEqual(3, r.Z);
+
+            json = "{ X : 1, Y : 3 }";
+            r = BsonSerializer.Deserialize<TDerivedClass>(json);
+            Assert.AreEqual(2, r.Chosen);
+            Assert.AreEqual(1, r.X);
+            Assert.AreEqual(3, r.Y);
+            Assert.AreEqual(3, r.Z);
+
+            json = "{ X : 1, Y : 3, Z : 4 }";
+            r = BsonSerializer.Deserialize<TDerivedClass>(json);
+            Assert.AreEqual(2, r.Chosen);
+            Assert.AreEqual(1, r.X);
+            Assert.AreEqual(3, r.Y);
+            Assert.AreEqual(4, r.Z);
         }
     }
 }

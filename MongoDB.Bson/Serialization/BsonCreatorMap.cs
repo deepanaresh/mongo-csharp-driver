@@ -116,19 +116,22 @@ namespace MongoDB.Bson.Serialization
 
                 var elementNames = new List<string>();
                 var defaultValues = new Dictionary<string, object>();
-                foreach (var argument in _arguments)
+                if (_arguments != null)
                 {
-                    // compare MetadataTokens because ReflectedTypes could be different (see p. 774-5 of C# 5.0 In a Nutshell)
-                    var memberMap = allMemberMaps.FirstOrDefault(m => m.MemberInfo.MetadataToken == argument.MetadataToken);
-                    if (memberMap == null)
+                    foreach (var argument in _arguments)
                     {
-                        var message = string.Format("Member '{0}' is not mapped.", argument.Name);
-                        throw new BsonSerializationException(message);
-                    }
-                    elementNames.Add(memberMap.ElementName);
-                    if (memberMap.IsDefaultValueSpecified)
-                    {
-                        defaultValues.Add(memberMap.ElementName, memberMap.DefaultValue);
+                        // compare MetadataTokens because ReflectedTypes could be different (see p. 774-5 of C# 5.0 In a Nutshell)
+                        var memberMap = allMemberMaps.FirstOrDefault(m => m.MemberInfo.MetadataToken == argument.MetadataToken);
+                        if (memberMap == null)
+                        {
+                            var message = string.Format("Member '{0}' is not mapped.", argument.Name);
+                            throw new BsonSerializationException(message);
+                        }
+                        elementNames.Add(memberMap.ElementName);
+                        if (memberMap.IsDefaultValueSpecified)
+                        {
+                            defaultValues.Add(memberMap.ElementName, memberMap.DefaultValue);
+                        }
                     }
                 }
 
@@ -199,18 +202,6 @@ namespace MongoDB.Bson.Serialization
 
             SetArguments(arguments);
             return this;
-        }
-
-        /// <summary>
-        /// Try to get the default value for an argument.
-        /// </summary>
-        /// <param name="elementName">The missing element name.</param>
-        /// <param name="defaultValue">The default value (if any).</param>
-        /// <returns>True if there was a default value; otherwise, false.</returns>
-        public bool TryGetDefaultValue(string elementName, out object defaultValue)
-        {
-            if (!_isFrozen) { ThrowNotFrozenException(); }
-            return _defaultValues.TryGetValue(elementName, out defaultValue);
         }
 
         // internal methods
