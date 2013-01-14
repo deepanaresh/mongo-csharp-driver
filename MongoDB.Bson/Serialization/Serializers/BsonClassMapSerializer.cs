@@ -470,22 +470,16 @@ namespace MongoDB.Bson.Serialization
         // private methods
         private BsonCreatorMap ChooseBestCreator(Dictionary<string, object> values)
         {
-            BsonCreatorMap bestCreatorMap = null;
-            var bestArgumentCount = 0;
-            var bestDefaultValueCount = 0;
-            foreach (var creatorMap in _classMap.CreatorMaps)
-            {
-                if (creatorMap.IsBetterMatch(bestCreatorMap, values, ref bestArgumentCount, ref bestDefaultValueCount))
-                {
-                    bestCreatorMap = creatorMap;
-                }
-            }
-            if (bestCreatorMap == null)
+            // there's only one selector for now, but there might be more in the future (possibly even user provided)
+            var selector = new MostArgumentsCreatorSelector();
+            var creatorMap = selector.SelectCreator(_classMap, values);
+
+            if (creatorMap == null)
             {
                 throw new BsonSerializationException("No matching creator found.");
             }
 
-            return bestCreatorMap;
+            return creatorMap;
         }
 
         private object CreateInstanceUsingCreator(Dictionary<string, object> values)

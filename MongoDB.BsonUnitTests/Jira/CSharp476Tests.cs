@@ -52,6 +52,14 @@ namespace MongoDB.BsonUnitTests.Jira
             {
             }
 
+            //[BsonConstructor] // NamedParameterCreatorMapConvention will match the parameters to members
+            //[BsonConstructor("X", "Y")]
+            public D(int x, int y, int z)
+                : base(x, y)
+            {
+                _z = z;
+            }
+
             //[BsonFactoryMethod] // NamedParameterCreatorMapConvention will match the parameters to members
             //[BsonFactoryMethod("X", "Y")]
             public static D Create(int x, int y)
@@ -77,7 +85,7 @@ namespace MongoDB.BsonUnitTests.Jira
                 cm.MapMember(d => d.Z);
 
                 var constructorInfo = typeof(D).GetConstructor(new[] { typeof(int), typeof(int) });
-                //cm.MapConstructor(constructorInfo, "X", "Y");
+                cm.MapConstructor(constructorInfo, "X", "Y");
 
                 var methodInfo = typeof(D).GetMethod("Create");
                 //cm.MapFactoryMethod(methodInfo, "X", "Y");
@@ -85,7 +93,8 @@ namespace MongoDB.BsonUnitTests.Jira
                 var @delegate = (Func<int, int, D>)((int x, int y) => { var a = x; var b = y; return D.Create(a, b); }); // arbitrary code
                 //cm.MapCreator(@delegate, "X", "Y"); // example using a delegate
                 //cm.MapCreator(d => new D(d.X, d.Y)); // example using a constructor
-                cm.MapCreator(d => D.Create(d.X, d.Y)); // example using a factory method
+                cm.MapCreator(d => new D(d.X, d.Y, d.Z)); // example using a constructor
+                //cm.MapCreator(d => D.Create(d.X, d.Y)); // example using a factory method
             });
         }
 

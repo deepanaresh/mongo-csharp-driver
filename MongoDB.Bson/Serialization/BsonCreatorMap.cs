@@ -237,61 +237,6 @@ namespace MongoDB.Bson.Serialization
             return _delegate.DynamicInvoke(arguments.ToArray());
         }
 
-        internal bool IsBetterMatch(BsonCreatorMap bestCreatorMap, Dictionary<string, object> values, ref int bestArgumentCount, ref int bestDefaultValueCount)
-        {
-            int argumentCount;
-            int defaultValueCount;
-            if (!IsMatch(values, out argumentCount, out defaultValueCount))
-            {
-                return false;
-            }
-
-            // find all the false conditions first so we can assign to the ref parameters once at the end
-            if (bestCreatorMap != null)
-            {
-                if (argumentCount < bestArgumentCount)
-                {
-                    return false;
-                }
-                else if (argumentCount == bestArgumentCount)
-                {
-                    if (defaultValueCount <= bestDefaultValueCount)
-                    {
-                        return false;
-                    }
-                }
-            }
-
-            bestArgumentCount = argumentCount;
-            bestDefaultValueCount = defaultValueCount;
-            return true;
-        }
-
-        internal bool IsMatch(Dictionary<string, object> values, out int argumentCount, out int defaultValueCount)
-        {
-            argumentCount = 0;
-            defaultValueCount = 0;
-
-            // a creator is a match if we have a value for each parameter (either a deserialized value or a default value)
-            foreach (var elementName in _elementNames)
-            {
-                if (values.ContainsKey(elementName))
-                {
-                    argumentCount++;
-                }
-                else if (_defaultValues.ContainsKey(elementName))
-                {
-                    defaultValueCount++;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
         // private methods
         private void ThrowFrozenException()
         {

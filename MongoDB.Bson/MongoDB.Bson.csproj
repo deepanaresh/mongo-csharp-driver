@@ -161,6 +161,7 @@
     <Compile Include="Serialization\Conventions\StringObjectIdIdGeneratorConvention.cs" />
     <Compile Include="Serialization\CreatorMapDelegateCompiler.cs" />
     <Compile Include="Serialization\ExpressionVisitor.cs" />
+    <Compile Include="Serialization\ICreatorSelector.cs" />
     <Compile Include="Serialization\IdGenerators\BsonBinaryDataGuidGenerator.cs" />
     <Compile Include="Serialization\IdGenerators\BsonObjectIdGenerator.cs" />
     <Compile Include="Serialization\IdGenerators\CombGuidGenerator.cs" />
@@ -169,6 +170,7 @@
     <Compile Include="Serialization\IdGenerators\ObjectIdGenerator.cs" />
     <Compile Include="Serialization\IdGenerators\StringObjectIdGenerator.cs" />
     <Compile Include="Serialization\IdGenerators\ZeroIdChecker.cs" />
+    <Compile Include="Serialization\MostArgumentsCreatorSelector.cs" />
     <Compile Include="Serialization\Serializers\BitArraySerializer.cs" />
     <Compile Include="Serialization\Serializers\BitmapSerializer.cs" />
     <Compile Include="Serialization\Serializers\BooleanSerializer.cs" />
