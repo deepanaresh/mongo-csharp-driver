@@ -17,6 +17,7 @@ using System;
 using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
@@ -207,7 +208,19 @@ namespace MongoDB.Driver.Internal
 
                 try
                 {
-                    sslStream.AuthenticateAsClient(_serverInstance.Address.Host);
+                    var targetHost = _serverInstance.Address.Host;
+                    var clientCertificate = _serverInstance.Settings.SslClientCertificate;
+
+                    if (clientCertificate == null)
+                    {
+                        sslStream.AuthenticateAsClient(targetHost);
+                    }
+                    else
+                    {
+                        var clientCertificates = new X509CertificateCollection(new[] { clientCertificate });
+                        var checkCertificateRevocation = false;
+                        sslStream.AuthenticateAsClient(targetHost, clientCertificates, SslProtocols.Default, checkCertificateRevocation);
+                    }
                 }
                 catch
                 {

@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using MongoDB.Bson;
 
@@ -43,6 +44,7 @@ namespace MongoDB.Driver
         private TimeSpan _secondaryAcceptableLatency;
         private List<MongoServerAddress> _servers;
         private TimeSpan _socketTimeout;
+        private X509Certificate _sslClientCertificate;
         private bool _useSsl;
         private bool _verifySslCertificate;
         private int _waitQueueSize;
@@ -74,6 +76,7 @@ namespace MongoDB.Driver
             _secondaryAcceptableLatency = MongoDefaults.SecondaryAcceptableLatency;
             _servers = new List<MongoServerAddress> { new MongoServerAddress("localhost") };
             _socketTimeout = MongoDefaults.SocketTimeout;
+            _sslClientCertificate = null;
             _useSsl = false;
             _verifySslCertificate = true;
             _waitQueueSize = MongoDefaults.ComputedWaitQueueSize;
@@ -158,6 +161,7 @@ namespace MongoDB.Driver
             _secondaryAcceptableLatency = secondaryAcceptableLatency;
             _servers = new List<MongoServerAddress>(servers);
             _socketTimeout = socketTimeout;
+            _sslClientCertificate = null;
             _useSsl = useSsl;
             _verifySslCertificate = verifySslCertificate;
             _waitQueueSize = waitQueueSize;
@@ -431,6 +435,19 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
+        /// Gets or sets the SSL client certificate.
+        /// </summary>
+        public X509Certificate SslClientCertificate
+        {
+            get { return _sslClientCertificate; }
+            set
+            {
+                if (_isFrozen) { throw new InvalidOperationException("MongoServerSettings is frozen."); }
+                _sslClientCertificate = value;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets whether to use SSL.
         /// </summary>
         public bool UseSsl
@@ -522,6 +539,7 @@ namespace MongoDB.Driver
             serverSettings.SecondaryAcceptableLatency = clientSettings.SecondaryAcceptableLatency;
             serverSettings.Servers = new List<MongoServerAddress>(clientSettings.Servers);
             serverSettings.SocketTimeout = clientSettings.SocketTimeout;
+            serverSettings.SslClientCertificate = clientSettings.SslClientCertificate;
             serverSettings.UseSsl = clientSettings.UseSsl;
             serverSettings.VerifySslCertificate = clientSettings.VerifySslCertificate;
             serverSettings.WaitQueueSize = clientSettings.WaitQueueSize;
@@ -562,6 +580,7 @@ namespace MongoDB.Driver
             serverSettings.SecondaryAcceptableLatency = builder.SecondaryAcceptableLatency;
             serverSettings.Servers = new List<MongoServerAddress>(builder.Servers);
             serverSettings.SocketTimeout = builder.SocketTimeout;
+            serverSettings.SslClientCertificate = null; // SSL client certificate must be provided in code
             serverSettings.UseSsl = builder.UseSsl;
             serverSettings.VerifySslCertificate = builder.VerifySslCertificate;
             serverSettings.WaitQueueSize = builder.ComputedWaitQueueSize;
@@ -604,6 +623,7 @@ namespace MongoDB.Driver
             serverSettings.SecondaryAcceptableLatency = url.SecondaryAcceptableLatency;
             serverSettings.Servers = new List<MongoServerAddress>(url.Servers);
             serverSettings.SocketTimeout = url.SocketTimeout;
+            serverSettings.SslClientCertificate = null; // SSL client certificate must be provided in code
             serverSettings.UseSsl = url.UseSsl;
             serverSettings.VerifySslCertificate = url.VerifySslCertificate;
             serverSettings.WaitQueueSize = url.ComputedWaitQueueSize;
@@ -636,6 +656,7 @@ namespace MongoDB.Driver
             clone._secondaryAcceptableLatency = _secondaryAcceptableLatency;
             clone._servers = new List<MongoServerAddress>(_servers);
             clone._socketTimeout = _socketTimeout;
+            clone._sslClientCertificate = _sslClientCertificate;
             clone._useSsl = _useSsl;
             clone._verifySslCertificate = _verifySslCertificate;
             clone._waitQueueSize = _waitQueueSize;
@@ -679,6 +700,7 @@ namespace MongoDB.Driver
                         _secondaryAcceptableLatency == rhs._secondaryAcceptableLatency &&
                         _servers.SequenceEqual(rhs._servers) &&
                         _socketTimeout == rhs._socketTimeout &&
+                        object.Equals(_sslClientCertificate, rhs._sslClientCertificate) &&
                         _useSsl == rhs._useSsl &&
                         _verifySslCertificate == rhs._verifySslCertificate &&
                         _waitQueueSize == rhs._waitQueueSize &&
@@ -752,6 +774,7 @@ namespace MongoDB.Driver
                 hash = 37 * hash + server.GetHashCode();
             }
             hash = 37 * hash + _socketTimeout.GetHashCode();
+            hash = 37 * hash + ((_sslClientCertificate == null) ? 0 : _sslClientCertificate.GetHashCode());
             hash = 37 * hash + _useSsl.GetHashCode();
             hash = 37 * hash + _verifySslCertificate.GetHashCode();
             hash = 37 * hash + _waitQueueSize.GetHashCode();
@@ -786,6 +809,10 @@ namespace MongoDB.Driver
             sb.AppendFormat("SecondaryAcceptableLatency={0};", _secondaryAcceptableLatency);
             sb.AppendFormat("Servers={0};", string.Join(",", _servers.Select(s => s.ToString()).ToArray()));
             sb.AppendFormat("SocketTimeout={0};", _socketTimeout);
+            if (_sslClientCertificate != null)
+            {
+                sb.AppendFormat("SslClientCertificate={0}", _sslClientCertificate.Subject);
+            }
             sb.AppendFormat("Ssl={0};", _useSsl);
             sb.AppendFormat("SslVerifyCertificate={0};", _verifySslCertificate);
             sb.AppendFormat("WaitQueueSize={0};", _waitQueueSize);
