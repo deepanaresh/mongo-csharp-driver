@@ -31,7 +31,7 @@ namespace MongoDB.Driver
         // private fields
         private ConnectionMode _connectionMode;
         private TimeSpan _connectTimeout;
-        private MongoCredentialsStore _credentialsStore;
+        private MongoCredentialsStore _credentialsList;
         private GuidRepresentation _guidRepresentation;
         private bool _ipv6;
         private TimeSpan _maxConnectionIdleTime;
@@ -62,7 +62,7 @@ namespace MongoDB.Driver
         {
             _connectionMode = ConnectionMode.Automatic;
             _connectTimeout = MongoDefaults.ConnectTimeout;
-            _credentialsStore = new MongoCredentialsStore();
+            _credentialsList = new MongoCredentialsStore(new MongoCredentials[0]);
             _guidRepresentation = MongoDefaults.GuidRepresentation;
             _ipv6 = false;
             _maxConnectionIdleTime = MongoDefaults.MaxConnectionIdleTime;
@@ -81,88 +81,6 @@ namespace MongoDB.Driver
 #pragma warning disable 612, 618
             _writeConcern = MongoDefaults.SafeMode.WriteConcern;
 #pragma warning restore
-        }
-
-        /// <summary>
-        /// Creates a new instance of MongoServerSettings. Usually you would use a connection string instead.
-        /// </summary>
-        /// <param name="connectionMode">The connection mode (Direct or ReplicaSet).</param>
-        /// <param name="connectTimeout">The connect timeout.</param>
-        /// <param name="credentialsStore">The credentials store.</param>
-        /// <param name="defaultCredentials">The default credentials.</param>
-        /// <param name="guidRepresentation">The representation for Guids.</param>
-        /// <param name="ipv6">Whether to use IPv6.</param>
-        /// <param name="maxConnectionIdleTime">The max connection idle time.</param>
-        /// <param name="maxConnectionLifeTime">The max connection life time.</param>
-        /// <param name="maxConnectionPoolSize">The max connection pool size.</param>
-        /// <param name="minConnectionPoolSize">The min connection pool size.</param>
-        /// <param name="readPreference">The default read preference.</param>
-        /// <param name="replicaSetName">The name of the replica set.</param>
-        /// <param name="safeMode">The safe mode.</param>
-        /// <param name="secondaryAcceptableLatency">The secondary acceptable latency.</param>
-        /// <param name="servers">The server addresses (normally one unless it is the seed list for connecting to a replica set).</param>
-        /// <param name="socketTimeout">The socket timeout.</param>
-        /// <param name="useSsl">Whether to use SSL.</param>
-        /// <param name="verifySslCertificate">Whether to verify an SSL certificate.</param>
-        /// <param name="waitQueueSize">The wait queue size.</param>
-        /// <param name="waitQueueTimeout">The wait queue timeout.</param>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        [Obsolete("Use the no-argument constructor instead and set the properties individually.")]
-        public MongoServerSettings(
-            ConnectionMode connectionMode,
-            TimeSpan connectTimeout,
-            MongoCredentialsStore credentialsStore,
-            MongoCredentials defaultCredentials,
-            GuidRepresentation guidRepresentation,
-            bool ipv6,
-            TimeSpan maxConnectionIdleTime,
-            TimeSpan maxConnectionLifeTime,
-            int maxConnectionPoolSize,
-            int minConnectionPoolSize,
-            ReadPreference readPreference,
-            string replicaSetName,
-            SafeMode safeMode,
-            TimeSpan secondaryAcceptableLatency,
-            IEnumerable<MongoServerAddress> servers,
-            TimeSpan socketTimeout,
-            bool useSsl,
-            bool verifySslCertificate,
-            int waitQueueSize,
-            TimeSpan waitQueueTimeout)
-        {
-            if (servers == null)
-            {
-                throw new ArgumentNullException("servers");
-            }
-            if (readPreference == null)
-            {
-                throw new ArgumentNullException("readPreference");
-            }
-            if (safeMode == null)
-            {
-                throw new ArgumentNullException("safeMode");
-            }
-
-            _connectionMode = connectionMode;
-            _connectTimeout = connectTimeout;
-            _credentialsStore = credentialsStore ?? new MongoCredentialsStore();
-            _credentialsStore.Add(defaultCredentials);
-            _guidRepresentation = guidRepresentation;
-            _ipv6 = ipv6;
-            _maxConnectionIdleTime = maxConnectionIdleTime;
-            _maxConnectionLifeTime = maxConnectionLifeTime;
-            _maxConnectionPoolSize = maxConnectionPoolSize;
-            _minConnectionPoolSize = minConnectionPoolSize;
-            _readPreference = readPreference;
-            _replicaSetName = replicaSetName;
-            _secondaryAcceptableLatency = secondaryAcceptableLatency;
-            _servers = new List<MongoServerAddress>(servers);
-            _socketTimeout = socketTimeout;
-            _useSsl = useSsl;
-            _verifySslCertificate = verifySslCertificate;
-            _waitQueueSize = waitQueueSize;
-            _waitQueueTimeout = waitQueueTimeout;
-            _writeConcern = safeMode;
         }
 
         // public properties
@@ -202,11 +120,11 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
-        /// Gets or sets the credentials store.
+        /// Gets or sets the credentials list.
         /// </summary>
-        public MongoCredentialsStore CredentialsStore
+        public IEnumerable<MongoCredentials> CredentialsList
         {
-            get { return _credentialsStore; }
+            get { return _credentialsList; }
             set
             {
                 if (_isFrozen) { throw new InvalidOperationException("MongoServerSettings is frozen."); }
@@ -214,7 +132,7 @@ namespace MongoDB.Driver
                 {
                     throw new ArgumentNullException("value");
                 }
-                _credentialsStore = value;
+                _credentialsList = new MongoCredentialsStore(value);
             }
         }
 
@@ -510,7 +428,7 @@ namespace MongoDB.Driver
             var serverSettings = new MongoServerSettings();
             serverSettings.ConnectionMode = clientSettings.ConnectionMode;
             serverSettings.ConnectTimeout = clientSettings.ConnectTimeout;
-            serverSettings.CredentialsStore = clientSettings.CredentialsStore.Clone();
+            serverSettings.CredentialsList = clientSettings.CredentialsList;
             serverSettings.GuidRepresentation = clientSettings.GuidRepresentation;
             serverSettings.IPv6 = clientSettings.IPv6;
             serverSettings.MaxConnectionIdleTime = clientSettings.MaxConnectionIdleTime;
@@ -549,7 +467,7 @@ namespace MongoDB.Driver
             serverSettings.ConnectTimeout = builder.ConnectTimeout;
             if (credentials != null)
             {
-                serverSettings.CredentialsStore.Add(credentials);
+                serverSettings.CredentialsList = new[] { credentials };
             }
             serverSettings.GuidRepresentation = builder.GuidRepresentation;
             serverSettings.IPv6 = builder.IPv6;
@@ -591,7 +509,7 @@ namespace MongoDB.Driver
             serverSettings.ConnectTimeout = url.ConnectTimeout;
             if (credentials != null)
             {
-                serverSettings.CredentialsStore.Add(credentials);
+                serverSettings.CredentialsList = new[] { credentials };
             }
             serverSettings.GuidRepresentation = url.GuidRepresentation;
             serverSettings.IPv6 = url.IPv6;
@@ -624,7 +542,7 @@ namespace MongoDB.Driver
             var clone = new MongoServerSettings();
             clone._connectionMode = _connectionMode;
             clone._connectTimeout = _connectTimeout;
-            clone._credentialsStore = _credentialsStore.Clone();
+            clone._credentialsList = _credentialsList;
             clone._guidRepresentation = _guidRepresentation;
             clone._ipv6 = _ipv6;
             clone._maxConnectionIdleTime = _maxConnectionIdleTime;
@@ -667,7 +585,7 @@ namespace MongoDB.Driver
                     return
                         _connectionMode == rhs._connectionMode &&
                         _connectTimeout == rhs._connectTimeout &&
-                        _credentialsStore.Equals(rhs._credentialsStore) &&
+                        _credentialsList.Equals(rhs._credentialsList) &&
                         _guidRepresentation == rhs._guidRepresentation &&
                         _ipv6 == rhs._ipv6 &&
                         _maxConnectionIdleTime == rhs._maxConnectionIdleTime &&
@@ -696,7 +614,6 @@ namespace MongoDB.Driver
         {
             if (!_isFrozen)
             {
-                _credentialsStore.Freeze();
                 _readPreference = _readPreference.FrozenCopy();
                 _writeConcern = _writeConcern.FrozenCopy();
                 _frozenHashCode = GetHashCode();
@@ -737,7 +654,7 @@ namespace MongoDB.Driver
             int hash = 17;
             hash = 37 * hash + _connectionMode.GetHashCode();
             hash = 37 * hash + _connectTimeout.GetHashCode();
-            hash = 37 * hash + _credentialsStore.GetHashCode();
+            hash = 37 * hash + _credentialsList.GetHashCode();
             hash = 37 * hash + _guidRepresentation.GetHashCode();
             hash = 37 * hash + _ipv6.GetHashCode();
             hash = 37 * hash + _maxConnectionIdleTime.GetHashCode();
@@ -774,7 +691,7 @@ namespace MongoDB.Driver
             var sb = new StringBuilder();
             sb.AppendFormat("ConnectionMode={0};", _connectionMode);
             sb.AppendFormat("ConnectTimeout={0};", _connectTimeout);
-            sb.AppendFormat("Credentials={{{0}}};", _credentialsStore);
+            sb.AppendFormat("Credentials={{{0}}};", _credentialsList);
             sb.AppendFormat("GuidRepresentation={0};", _guidRepresentation);
             sb.AppendFormat("IPv6={0};", _ipv6);
             sb.AppendFormat("MaxConnectionIdleTime={0};", _maxConnectionIdleTime);

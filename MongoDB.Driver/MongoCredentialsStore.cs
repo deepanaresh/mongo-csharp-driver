@@ -15,99 +15,32 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
 
 namespace MongoDB.Driver
 {
     /// <summary>
-    /// Represents a credentials store that contains credentials for different databases.
+    /// Represents a list of credentials and the rules about how credentials can be used together.
     /// </summary>
-    public class MongoCredentialsStore : IEnumerable<MongoCredentials>
+    internal class MongoCredentialsStore : IEnumerable<MongoCredentials>
     {
         // private fields
-        private readonly List<MongoCredentials> _credentialsList = new List<MongoCredentials>();
-        private readonly HashSet<string> _sources = new HashSet<string>();
-
-        private int _frozenHashCode;
-        private string _frozenStringRepresentation;
-        private bool _isFrozen;
+        private readonly ReadOnlyCollection<MongoCredentials> _credentialsList;
 
         // constructors
         /// <summary>
         /// Creates a new instance of the MongoCredentialsStore class.
         /// </summary>
-        public MongoCredentialsStore()
+        /// <param name="credentialsList">The list of credentials.</param>
+        public MongoCredentialsStore(IEnumerable<MongoCredentials> credentialsList)
         {
-        }
-
-        // public properties
-        /// <summary>
-        /// Gets the number of credentials in the store.
-        /// </summary>
-        public int Count
-        {
-            get { return _credentialsList.Count; }
-        }
-
-        /// <summary>
-        /// Gets whether the credentials store has been frozen to prevent further changes.
-        /// </summary>
-        public bool IsFrozen
-        {
-            get { return _isFrozen; }
+            var materializedList = new List<MongoCredentials>(credentialsList); // force enumeration of credentialsList
+            EnsureCredentialsAreCompatibleWithEachOther(materializedList);
+            _credentialsList = new ReadOnlyCollection<MongoCredentials>(materializedList);
         }
 
         // public methods
-        /// <summary>
-        /// Adds the specified credentials.
-        /// </summary>
-        /// <param name="credentials">The credentials.</param>
-        public void Add(MongoCredentials credentials)
-        {
-            if (credentials == null)
-            {
-                throw new ArgumentNullException("credentials");
-            }
-            if (_sources.Contains(credentials.Source))
-            {
-                throw new ArgumentException("The server currently requires that each credentials provided be from a separate source. ");
-            }
-            if (_isFrozen) { throw new InvalidOperationException("MongoCredentialsStore is frozen."); }
-
-            _credentialsList.Add(credentials);
-            _sources.Add(credentials.Source);
-        }
-
-        /// <summary>
-        /// Creates a clone of the credentials store.
-        /// </summary>
-        /// <returns>A clone of the credentials store.</returns>
-        public MongoCredentialsStore Clone()
-        {
-            var clone = new MongoCredentialsStore();
-            foreach (var credentials in _credentialsList)
-            {
-                clone.Add(credentials);
-            }
-            return clone;
-        }
-
-        /// <summary>
-        /// Compares this credentials store to another credentials store.
-        /// </summary>
-        /// <param name="rhs">The other credentials store.</param>
-        /// <returns>True if the two credentials stores are equal.</returns>
-        public bool Equals(MongoCredentialsStore rhs)
-        {
-            if (object.ReferenceEquals(rhs, null) || GetType() != rhs.GetType()) 
-            {
-                return false;
-            }
-
-            return _credentialsList.SequenceEqual(rhs._credentialsList);
-        }
-
         /// <summary>
         /// Compares this credentials store to another credentials store.
         /// </summary>
@@ -115,22 +48,13 @@ namespace MongoDB.Driver
         /// <returns>True if the two credentials stores are equal.</returns>
         public override bool Equals(object obj)
         {
-            return Equals(obj as MongoCredentialsStore); // works even if obj is null or of a different type
-        }
-
-        /// <summary>
-        /// Freezes the credentials store.
-        /// </summary>
-        /// <returns>The frozen credentials store.</returns>
-        public MongoCredentialsStore Freeze()
-        {
-            if (!_isFrozen)
+            if (obj == null || obj.GetType() != typeof(MongoCredentialsStore))
             {
-                _frozenHashCode = GetHashCode();
-                _frozenStringRepresentation = ToString();
-                _isFrozen = true;
+                return false;
             }
-            return this;
+
+            var rhs = (MongoCredentialsStore)obj;
+            return _credentialsList.SequenceEqual(rhs._credentialsList);
         }
 
         /// <summary>
@@ -148,11 +72,6 @@ namespace MongoDB.Driver
         /// <returns>The hashcode.</returns>
         public override int GetHashCode()
         {
-            if (_isFrozen)
-            {
-                return _frozenHashCode;
-            }
-
             // see Effective Java by Joshua Bloch
             int hash = 17;
             foreach (var credentials in _credentialsList)
@@ -168,11 +87,6 @@ namespace MongoDB.Driver
         /// <returns>A string representation of the credentials store.</returns>
         public override string ToString()
         {
-            if (_isFrozen)
-            {
-                return _frozenStringRepresentation;
-            }
-
             return string.Format("{{{0}}}", string.Join(",", _credentialsList.Select(c => c.ToString()).ToArray()));
         }
 
@@ -186,6 +100,16 @@ namespace MongoDB.Driver
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
             return _credentialsList.GetEnumerator();
+        }
+
+        // private metods
+        private void EnsureCredentialsAreCompatibleWithEachOther(List<MongoCredentials> list)
+        {
+            var sources = new HashSet<string>(list.Select(c => c.Source));
+            if (sources.Count < list.Count)
+            {
+                throw new ArgumentException("The server currently requires that each credentials provided be from a separate source. ");
+            }
         }
     }
 }
