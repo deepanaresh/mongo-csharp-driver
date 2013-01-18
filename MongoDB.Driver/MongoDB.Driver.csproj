@@ -83,6 +83,9 @@
     <Compile Include="..\MongoDB.Shared\CanonicalEquatableClass.cs">
       <Link>Shared\CanonicalEquatableClass.cs</Link>
     </Compile>
+    <Compile Include="..\MongoDB.Shared\CanonicalEquatableDerivedClass.cs">
+      <Link>Shared\CanonicalEquatableDerivedClass.cs</Link>
+    </Compile>
     <Compile Include="..\MongoDB.Shared\CanonicalEquatableStruct.cs">
       <Link>Shared\CanonicalEquatableStruct.cs</Link>
     </Compile>

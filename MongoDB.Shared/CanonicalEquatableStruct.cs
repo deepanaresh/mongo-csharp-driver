@@ -42,20 +42,27 @@ namespace MongoDB.Shared
         }
 
         // public methods
+        // actual work done here to avoid boxing
         public bool Equals(CanonicalEquatableStruct rhs)
         {
-            return _x == rhs._x && _y == rhs._y; // be sure x and y implement ==, otherwise use Equals
+            // be sure x and y implement ==, otherwise use Equals
+            return
+                _x == rhs._x && 
+                _y == rhs._y;
         }
 
         public override bool Equals(object obj)
         {
-            if (!(obj is CanonicalEquatableStruct)) { return false; }
+            if (!(obj is CanonicalEquatableStruct)) { return false; } // handles obj == null correctly
             return Equals((CanonicalEquatableStruct)obj);
         }
 
         public override int GetHashCode()
         {
-            return new Hasher().Hash(_x).Hash(_y).HashCode;
+            return new Hasher()
+                .Hash(_x)
+                .Hash(_y)
+                .Result;
         }
     }
 }

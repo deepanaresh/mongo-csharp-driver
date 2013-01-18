@@ -33,7 +33,7 @@ namespace MongoDB.Shared
         // public operators
         public static bool operator ==(CanonicalEquatableClass lhs, CanonicalEquatableClass rhs)
         {
-            return object.Equals(lhs, rhs);
+            return object.Equals(lhs, rhs); // handles lhs == null correctly
         }
 
         public static bool operator !=(CanonicalEquatableClass lhs, CanonicalEquatableClass rhs)
@@ -44,19 +44,27 @@ namespace MongoDB.Shared
         // public methods
         public bool Equals(CanonicalEquatableClass obj)
         {
-            return Equals((object)obj);
+            return Equals((object)obj); // handles obj == null correctly
         }
 
+        // actual work done here (in virtual Equals) to handle inheritance
         public override bool Equals(object obj)
         {
+            // use ReferenceEquals consistently because sometimes using == can lead to recursion loops
+            // make sure to use GetType instead of typeof in case derived classes are involved
             if (object.ReferenceEquals(obj, null) || GetType() != obj.GetType()) { return false; }
             var rhs = (CanonicalEquatableClass)obj;
-            return _x == rhs._x && _y == rhs._y; // be sure x and y implement ==, otherwise use Equals
+            return // be sure x and y implement ==, otherwise use Equals
+                _x == rhs._x &&
+                _y == rhs._y;
         }
 
         public override int GetHashCode()
         {
-            return new Hasher().Hash(_x).Hash(_y).HashCode;
+            return new Hasher()
+                .Hash(_x)
+                .Hash(_y)
+                .Result;
         }
     }
 }

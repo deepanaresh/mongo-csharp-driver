@@ -20,39 +20,50 @@ namespace MongoDB.Shared
     internal class Hasher
     {
         // private fields
-        private int _hashCode = 17;
+        private int _result;
+
+        // constructors
+        public Hasher()
+        {
+            _result = 17;
+        }
+
+        public Hasher(int seed)
+        {
+            _result = seed;
+        }
 
         // public properties
-        public int HashCode
+        public int Result
         {
-            get { return _hashCode; }
+            get { return _result; }
         }
 
         // public methods
         // this overload added to avoid boxing
         public Hasher Hash(bool obj)
         {
-            _hashCode = 37 * _hashCode + obj.GetHashCode();
+            _result = 37 * _result + obj.GetHashCode();
             return this;
         }
 
         // this overload added to avoid boxing
         public Hasher Hash(int obj)
         {
-            _hashCode = 37 * _hashCode + obj.GetHashCode();
+            _result = 37 * _result + obj.GetHashCode();
             return this;
         }
 
         // this overload added to avoid boxing
         public Hasher Hash(long obj)
         {
-            _hashCode = 37 * _hashCode + obj.GetHashCode();
+            _result = 37 * _result + obj.GetHashCode();
             return this;
         }
 
         public Hasher Hash(object obj)
         {
-            _hashCode = 37 * _hashCode + ((obj == null) ? 0 : obj.GetHashCode());
+            _result = 37 * _result + ((obj == null) ? 0 : obj.GetHashCode());
             return this;
         }
 

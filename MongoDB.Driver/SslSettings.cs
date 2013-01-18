@@ -184,7 +184,7 @@ namespace MongoDB.Driver
                 .Hash(_clientCertificateSelectionCallback)
                 .Hash(_enabledSslProtocols)
                 .Hash(_serverCertificateValidationCallback)
-                .HashCode;
+                .Result;
         }
 
         /// <summary>
