@@ -22,7 +22,6 @@ using System.Security.Cryptography.X509Certificates;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
-using MongoDB.Driver.Communication;
 using MongoDB.Driver.Communication.Security;
 
 namespace MongoDB.Driver.Internal
@@ -196,31 +195,37 @@ namespace MongoDB.Driver.Internal
             var stream = (Stream)tcpClient.GetStream();
             if (_serverInstance.Settings.UseSsl)
             {
-                SslStream sslStream;
-                if (_serverInstance.Settings.VerifySslCertificate)
+                var checkCertificateRevocation = true;
+                var clientCertificateCollection = (X509CertificateCollection)null;
+                var clientCertificateSelectionCallback = (LocalCertificateSelectionCallback)null;
+                var enabledSslProtocols = SslProtocols.Default;
+                var serverCertificateValidationCallback = (RemoteCertificateValidationCallback)null;
+
+                var sslSettings = _serverInstance.Settings.SslSettings;
+                if (sslSettings != null)
                 {
-                    sslStream = new SslStream(stream, false); // don't leave inner stream open
-                }
-                else
-                {
-                    sslStream = new SslStream(stream, false, AcceptAnyCertificate, null); // don't leave inner stream open
+                    checkCertificateRevocation = sslSettings.CheckCertificateRevocation;
+                    clientCertificateCollection = sslSettings.ClientCertificateCollection;
+                    clientCertificateSelectionCallback = sslSettings.ClientCertificateSelectionCallback;
+                    enabledSslProtocols = sslSettings.EnabledSslProtocols;
+                    serverCertificateValidationCallback = sslSettings.ServerCertificateValidationCallback;
                 }
 
+                if (serverCertificateValidationCallback == null && !_serverInstance.Settings.VerifySslCertificate)
+                {
+                    serverCertificateValidationCallback = AcceptAnyCertificate;
+                }
+
+                if (clientCertificateSelectionCallback == null && clientCertificateCollection != null && clientCertificateCollection.Count > 1)
+                {
+                    throw new NotSupportedException("When multiple client certificates are provided you must also provide a ClientCertificateSelectionCallback.");
+                }
+
+                var sslStream = new SslStream(stream, false, serverCertificateValidationCallback, clientCertificateSelectionCallback);
                 try
                 {
                     var targetHost = _serverInstance.Address.Host;
-                    var clientCertificate = _serverInstance.Settings.SslClientCertificate;
-
-                    if (clientCertificate == null)
-                    {
-                        sslStream.AuthenticateAsClient(targetHost);
-                    }
-                    else
-                    {
-                        var clientCertificates = new X509CertificateCollection(new[] { clientCertificate });
-                        var checkCertificateRevocation = false;
-                        sslStream.AuthenticateAsClient(targetHost, clientCertificates, SslProtocols.Default, checkCertificateRevocation);
-                    }
+                    sslStream.AuthenticateAsClient(targetHost, clientCertificateCollection, enabledSslProtocols, checkCertificateRevocation);
                 }
                 catch
                 {
