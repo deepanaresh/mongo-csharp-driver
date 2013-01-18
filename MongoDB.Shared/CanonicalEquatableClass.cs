@@ -24,6 +24,11 @@ namespace MongoDB.Shared
         private int _y;
 
         // constructors
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CanonicalEquatableClass"/> class.
+        /// </summary>
+        /// <param name="x">The x.</param>
+        /// <param name="y">The y.</param>
         public CanonicalEquatableClass(int x, int y)
         {
             _x = y;
@@ -31,25 +36,55 @@ namespace MongoDB.Shared
         }
 
         // public operators
+        /// <summary>
+        /// Determines whether two <see cref="CanonicalEquatableClass"/> instances are equal.
+        /// </summary>
+        /// <param name="lhs">The LHS.</param>
+        /// <param name="rhs">The RHS.</param>
+        /// <returns>
+        ///   <c>true</c> if the left hand side is equal to the right hand side; otherwise, <c>false</c>.
+        /// </returns>
         public static bool operator ==(CanonicalEquatableClass lhs, CanonicalEquatableClass rhs)
         {
             return object.Equals(lhs, rhs); // handles lhs == null correctly
         }
 
+        /// <summary>
+        /// Determines whether two <see cref="CanonicalEquatableClass"/> instances are not equal.
+        /// </summary>
+        /// <param name="lhs">The LHS.</param>
+        /// <param name="rhs">The RHS.</param>
+        /// <returns>
+        ///   <c>true</c> if the left hand side is not equal to the right hand side; otherwise, <c>false</c>.
+        /// </returns>
         public static bool operator !=(CanonicalEquatableClass lhs, CanonicalEquatableClass rhs)
         {
             return !(lhs == rhs);
         }
 
         // public methods
+        /// <summary>
+        /// Determines whether the specified <see cref="CanonicalEquatableClass" /> is equal to this instance.
+        /// </summary>
+        /// <param name="obj">The <see cref="CanonicalEquatableClass" /> to compare with this instance.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified <see cref="CanonicalEquatableClass" /> is equal to this instance; otherwise, <c>false</c>.
+        /// </returns>
         public bool Equals(CanonicalEquatableClass obj)
         {
             return Equals((object)obj); // handles obj == null correctly
         }
 
-        // actual work done here (in virtual Equals) to handle inheritance
+        /// <summary>
+        /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
+        /// </summary>
+        /// <param name="obj">The <see cref="System.Object" /> to compare with this instance.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.
+        /// </returns>
         public override bool Equals(object obj)
         {
+            // actual work done here (in virtual Equals) to handle inheritance
             // use ReferenceEquals consistently because sometimes using == can lead to recursion loops
             // make sure to use GetType instead of typeof in case derived classes are involved
             if (object.ReferenceEquals(obj, null) || GetType() != obj.GetType()) { return false; }
@@ -59,12 +94,18 @@ namespace MongoDB.Shared
                 _y == rhs._y;
         }
 
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// </returns>
         public override int GetHashCode()
         {
             return new Hasher()
                 .Hash(_x)
                 .Hash(_y)
-                .Result;
+                .GetHashCode();
         }
     }
 }

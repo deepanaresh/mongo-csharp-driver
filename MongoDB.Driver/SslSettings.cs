@@ -27,7 +27,7 @@ namespace MongoDB.Driver
     /// <summary>
     /// Represents the settings for using SSL.
     /// </summary>
-    public class SslSettings
+    public class SslSettings : IEquatable<SslSettings>
     {
         // private fields
         private bool _checkCertificateRevocation = true;
@@ -116,6 +116,33 @@ namespace MongoDB.Driver
             get { return _clientCertificateCollection; }
         }
 
+        // public operators
+        /// <summary>
+        /// Determines whether two <see cref="SslSettings"/> instances are equal.
+        /// </summary>
+        /// <param name="lhs">The LHS.</param>
+        /// <param name="rhs">The RHS.</param>
+        /// <returns>
+        ///   <c>true</c> if the left hand side is equal to the right hand side; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool operator ==(SslSettings lhs, SslSettings rhs)
+        {
+            return object.Equals(lhs, rhs); // handles lhs == null correctly
+        }
+
+        /// <summary>
+        /// Determines whether two <see cref="SslSettings"/> instances are not equal.
+        /// </summary>
+        /// <param name="lhs">The LHS.</param>
+        /// <param name="rhs">The RHS.</param>
+        /// <returns>
+        ///   <c>true</c> if the left hand side is not equal to the right hand side; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool operator !=(SslSettings lhs, SslSettings rhs)
+        {
+            return !(lhs == rhs);
+        }
+
         // public methods
         /// <summary>
         /// Clones an SslSettings.
@@ -133,17 +160,27 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
-        /// Compares two SslSettings instances.
+        /// Determines whether the specified <see cref="SslSettings" /> is equal to this instance.
         /// </summary>
-        /// <param name="obj">The other instance.</param>
-        /// <returns>True if the two instances are equal.</returns>
+        /// <param name="obj">The <see cref="SslSettings" /> to compare with this instance.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified <see cref="SslSettings" /> is equal to this instance; otherwise, <c>false</c>.
+        /// </returns>
+        public bool Equals(SslSettings obj)
+        {
+            return Equals((object)obj); // handles obj == null correctly
+        }
+
+        /// <summary>
+        /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
+        /// </summary>
+        /// <param name="obj">The <see cref="System.Object" /> to compare with this instance.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.
+        /// </returns>
         public override bool Equals(object obj)
         {
-            if (obj == null || obj.GetType() != typeof(SslSettings))
-            {
-                return false;
-            }
-
+            if (object.ReferenceEquals(obj, null) || GetType() != obj.GetType()) { return false; }
             var rhs = (SslSettings)obj;
             return
                 _checkCertificateRevocation == rhs._checkCertificateRevocation &&
@@ -168,9 +205,11 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
-        /// Gets the hash code.
+        /// Returns a hash code for this instance.
         /// </summary>
-        /// <returns>The hash code.</returns>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// </returns>
         public override int GetHashCode()
         {
             if (_isFrozen)
@@ -184,7 +223,7 @@ namespace MongoDB.Driver
                 .Hash(_clientCertificateSelectionCallback)
                 .Hash(_enabledSslProtocols)
                 .Hash(_serverCertificateValidationCallback)
-                .Result;
+                .GetHashCode();
         }
 
         /// <summary>

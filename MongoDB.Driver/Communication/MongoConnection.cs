@@ -216,11 +216,6 @@ namespace MongoDB.Driver.Internal
                     serverCertificateValidationCallback = AcceptAnyCertificate;
                 }
 
-                if (clientCertificateSelectionCallback == null && clientCertificateCollection != null && clientCertificateCollection.Count > 1)
-                {
-                    throw new NotSupportedException("When multiple client certificates are provided you must also provide a ClientCertificateSelectionCallback.");
-                }
-
                 var sslStream = new SslStream(stream, false, serverCertificateValidationCallback, clientCertificateSelectionCallback);
                 try
                 {

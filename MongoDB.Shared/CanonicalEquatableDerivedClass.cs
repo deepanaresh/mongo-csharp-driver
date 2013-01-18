@@ -23,6 +23,12 @@ namespace MongoDB.Shared
         private int _z;
 
         // constructors
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CanonicalEquatableDerivedClass"/> class.
+        /// </summary>
+        /// <param name="x">The x.</param>
+        /// <param name="y">The y.</param>
+        /// <param name="z">The z.</param>
         public CanonicalEquatableDerivedClass(int x, int y, int z)
             : base(x, y)
         {
@@ -32,11 +38,25 @@ namespace MongoDB.Shared
         // base class defines == and !=
 
         // public methods
+        /// <summary>
+        /// Determines whether the specified <see cref="CanonicalEquatableDerivedClass" /> is equal to this instance.
+        /// </summary>
+        /// <param name="obj">The <see cref="CanonicalEquatableDerivedClass" /> to compare with this instance.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified <see cref="CanonicalEquatableDerivedClass" /> is equal to this instance; otherwise, <c>false</c>.
+        /// </returns>
         public bool Equals(CanonicalEquatableDerivedClass obj)
         {
             return Equals((object)obj);
         }
 
+        /// <summary>
+        /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
+        /// </summary>
+        /// <param name="obj">The <see cref="System.Object" /> to compare with this instance.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.
+        /// </returns>
         public override bool Equals(object obj)
         {
             // base class checks for obj == null and correct type
@@ -46,12 +66,18 @@ namespace MongoDB.Shared
                 _z == rhs._z;
         }
 
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// </returns>
         public override int GetHashCode()
         {
             // use hash code of base class as seed to Hasher
             return new Hasher(base.GetHashCode())
                 .Hash(_z)
-                .Result;
+                .GetHashCode();
         }
     }
 }

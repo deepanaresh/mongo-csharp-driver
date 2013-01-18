@@ -20,13 +20,14 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using MongoDB.Bson;
+using MongoDB.Shared;
 
 namespace MongoDB.Driver
 {
     /// <summary>
     /// The settings used to access a MongoDB server.
     /// </summary>
-    public class MongoServerSettings
+    public class MongoServerSettings : IEquatable<MongoServerSettings>
     {
         // private fields
         private ConnectionMode _connectionMode;
@@ -515,6 +516,33 @@ namespace MongoDB.Driver
             }
         }
 
+        // public operators
+        /// <summary>
+        /// Determines whether two <see cref="MongoServerSettings"/> instances are equal.
+        /// </summary>
+        /// <param name="lhs">The LHS.</param>
+        /// <param name="rhs">The RHS.</param>
+        /// <returns>
+        ///   <c>true</c> if the left hand side is equal to the right hand side; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool operator ==(MongoServerSettings lhs, MongoServerSettings rhs)
+        {
+            return object.Equals(lhs, rhs); // handles lhs == null correctly
+        }
+
+        /// <summary>
+        /// Determines whether two <see cref="MongoServerSettings"/> instances are not equal.
+        /// </summary>
+        /// <param name="lhs">The LHS.</param>
+        /// <param name="rhs">The RHS.</param>
+        /// <returns>
+        ///   <c>true</c> if the left hand side is not equal to the right hand side; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool operator !=(MongoServerSettings lhs, MongoServerSettings rhs)
+        {
+            return !(lhs == rhs);
+        }
+
         // public static methods
         /// <summary>
         /// Creates a new MongoServerSettings object from a MongoClientSettings object.
@@ -538,7 +566,7 @@ namespace MongoDB.Driver
             serverSettings.SecondaryAcceptableLatency = clientSettings.SecondaryAcceptableLatency;
             serverSettings.Servers = new List<MongoServerAddress>(clientSettings.Servers);
             serverSettings.SocketTimeout = clientSettings.SocketTimeout;
-            serverSettings.SslSettings = clientSettings.SslSettings.Clone();
+            serverSettings.SslSettings = (clientSettings.SslSettings == null) ? null : clientSettings.SslSettings.Clone();
             serverSettings.UseSsl = clientSettings.UseSsl;
             serverSettings.VerifySslCertificate = clientSettings.VerifySslCertificate;
             serverSettings.WaitQueueSize = clientSettings.WaitQueueSize;
@@ -655,7 +683,7 @@ namespace MongoDB.Driver
             clone._secondaryAcceptableLatency = _secondaryAcceptableLatency;
             clone._servers = new List<MongoServerAddress>(_servers);
             clone._socketTimeout = _socketTimeout;
-            clone._sslSettings = _sslSettings.Clone();
+            clone._sslSettings = (_sslSettings == null) ? null : _sslSettings.Clone();
             clone._useSsl = _useSsl;
             clone._verifySslCertificate = _verifySslCertificate;
             clone._waitQueueSize = _waitQueueSize;
@@ -665,48 +693,49 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
-        /// Compares two MongoServerSettings instances.
+        /// Determines whether the specified <see cref="MongoServerSettings" /> is equal to this instance.
         /// </summary>
-        /// <param name="obj">The other instance.</param>
-        /// <returns>True if the two instances are equal.</returns>
+        /// <param name="obj">The <see cref="MongoServerSettings" /> to compare with this instance.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified <see cref="MongoServerSettings" /> is equal to this instance; otherwise, <c>false</c>.
+        /// </returns>
+        public bool Equals(MongoServerSettings obj)
+        {
+            return Equals((object)obj); // handles obj == null correctly
+        }
+
+        /// <summary>
+        /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
+        /// </summary>
+        /// <param name="obj">The <see cref="System.Object" /> to compare with this instance.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.
+        /// </returns>
         public override bool Equals(object obj)
         {
-            var rhs = obj as MongoServerSettings;
-            if (rhs == null)
-            {
-                return false;
-            }
-            else
-            {
-                if (_isFrozen && rhs._isFrozen)
-                {
-                    return _frozenStringRepresentation == rhs._frozenStringRepresentation;
-                }
-                else
-                {
-                    return
-                        _connectionMode == rhs._connectionMode &&
-                        _connectTimeout == rhs._connectTimeout &&
-                        _credentialsStore.Equals(rhs._credentialsStore) &&
-                        _guidRepresentation == rhs._guidRepresentation &&
-                        _ipv6 == rhs._ipv6 &&
-                        _maxConnectionIdleTime == rhs._maxConnectionIdleTime &&
-                        _maxConnectionLifeTime == rhs._maxConnectionLifeTime &&
-                        _maxConnectionPoolSize == rhs._maxConnectionPoolSize &&
-                        _minConnectionPoolSize == rhs._minConnectionPoolSize &&
-                        _readPreference == rhs._readPreference &&
-                        _replicaSetName == rhs._replicaSetName &&
-                        _secondaryAcceptableLatency == rhs._secondaryAcceptableLatency &&
-                        _servers.SequenceEqual(rhs._servers) &&
-                        _socketTimeout == rhs._socketTimeout &&
-                        object.Equals(_sslSettings, rhs._sslSettings) &&
-                        _useSsl == rhs._useSsl &&
-                        _verifySslCertificate == rhs._verifySslCertificate &&
-                        _waitQueueSize == rhs._waitQueueSize &&
-                        _waitQueueTimeout == rhs._waitQueueTimeout &&
-                        _writeConcern == rhs._writeConcern;
-                }
-            }
+            if (object.ReferenceEquals(obj, null) || GetType() != obj.GetType()) { return false; }
+            var rhs = (MongoServerSettings)obj;
+            return
+               _connectionMode == rhs._connectionMode &&
+               _connectTimeout == rhs._connectTimeout &&
+               _credentialsStore.Equals(rhs._credentialsStore) &&
+               _guidRepresentation == rhs._guidRepresentation &&
+               _ipv6 == rhs._ipv6 &&
+               _maxConnectionIdleTime == rhs._maxConnectionIdleTime &&
+               _maxConnectionLifeTime == rhs._maxConnectionLifeTime &&
+               _maxConnectionPoolSize == rhs._maxConnectionPoolSize &&
+               _minConnectionPoolSize == rhs._minConnectionPoolSize &&
+               _readPreference == rhs._readPreference &&
+               _replicaSetName == rhs._replicaSetName &&
+               _secondaryAcceptableLatency == rhs._secondaryAcceptableLatency &&
+               _servers.SequenceEqual(rhs._servers) &&
+               _socketTimeout == rhs._socketTimeout &&
+               _sslSettings == rhs._sslSettings &&
+               _useSsl == rhs._useSsl &&
+               _verifySslCertificate == rhs._verifySslCertificate &&
+               _waitQueueSize == rhs._waitQueueSize &&
+               _waitQueueTimeout == rhs._waitQueueTimeout &&
+               _writeConcern == rhs._writeConcern;
         }
 
         /// <summary>
@@ -754,32 +783,28 @@ namespace MongoDB.Driver
                 return _frozenHashCode;
             }
 
-            // see Effective Java by Joshua Bloch
-            int hash = 17;
-            hash = 37 * hash + _connectionMode.GetHashCode();
-            hash = 37 * hash + _connectTimeout.GetHashCode();
-            hash = 37 * hash + _credentialsStore.GetHashCode();
-            hash = 37 * hash + _guidRepresentation.GetHashCode();
-            hash = 37 * hash + _ipv6.GetHashCode();
-            hash = 37 * hash + _maxConnectionIdleTime.GetHashCode();
-            hash = 37 * hash + _maxConnectionLifeTime.GetHashCode();
-            hash = 37 * hash + _maxConnectionPoolSize.GetHashCode();
-            hash = 37 * hash + _minConnectionPoolSize.GetHashCode();
-            hash = 37 * hash + _readPreference.GetHashCode();
-            hash = 37 * hash + ((_replicaSetName == null) ? 0 : _replicaSetName.GetHashCode());
-            hash = 37 * hash + _secondaryAcceptableLatency.GetHashCode();
-            foreach (var server in _servers)
-            {
-                hash = 37 * hash + server.GetHashCode();
-            }
-            hash = 37 * hash + _socketTimeout.GetHashCode();
-            hash = 37 * hash + ((_sslSettings == null) ? 0 : _sslSettings.GetHashCode());
-            hash = 37 * hash + _useSsl.GetHashCode();
-            hash = 37 * hash + _verifySslCertificate.GetHashCode();
-            hash = 37 * hash + _waitQueueSize.GetHashCode();
-            hash = 37 * hash + _waitQueueTimeout.GetHashCode();
-            hash = 37 * hash + _writeConcern.GetHashCode();
-            return hash;
+            return new Hasher()
+                .Hash(_connectionMode)
+                .Hash(_connectTimeout)
+                .Hash(_credentialsStore)
+                .Hash(_guidRepresentation)
+                .Hash(_ipv6)
+                .Hash(_maxConnectionIdleTime)
+                .Hash(_maxConnectionLifeTime)
+                .Hash(_maxConnectionPoolSize)
+                .Hash(_minConnectionPoolSize)
+                .Hash(_readPreference)
+                .Hash(_replicaSetName)
+                .Hash(_secondaryAcceptableLatency)
+                .HashElements(_servers)
+                .Hash(_socketTimeout)
+                .Hash(_sslSettings)
+                .Hash(_useSsl)
+                .Hash(_verifySslCertificate)
+                .Hash(_waitQueueSize)
+                .Hash(_waitQueueTimeout)
+                .Hash(_writeConcern)
+                .GetHashCode();
         }
 
         /// <summary>
