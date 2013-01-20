@@ -401,20 +401,32 @@ namespace MongoDB.Bson.IO
         public byte[] ReadBytes(int count)
         {
             if (_disposed) { throw new ObjectDisposedException("BsonBuffer"); }
-            EnsureDataAvailable(count);
             var value = new byte[count];
-            int destinationOffset = 0;
+            ReadBytes(count, value, 0);
+            return value;
+        }
+
+        /// <summary>
+        /// Reads bytes from the buffer.
+        /// </summary>
+        /// <param name="count">The number of bytes to read.</param>
+        /// <param name="destination">The destination.</param>
+        /// <param name="destinationOffset">The offset in the destination to start reading into.</param>
+        /// <returns>A byte array.</returns>
+        public void ReadBytes(int count, byte[] destination, int destinationOffset)
+        {
+            if (_disposed) { throw new ObjectDisposedException("BsonBuffer"); }
+            EnsureDataAvailable(count);
             while (count > 0)
             {
                 // might only be reading part of the first or last chunk
                 int available = __chunkSize - _chunkOffset;
                 int partialCount = (count > available) ? available : count;
-                Buffer.BlockCopy(_chunk, _chunkOffset, value, destinationOffset, partialCount);
+                Buffer.BlockCopy(_chunk, _chunkOffset, destination, destinationOffset, partialCount);
                 Position += partialCount;
                 destinationOffset += partialCount;
                 count -= partialCount;
             }
-            return value;
         }
 
         /// <summary>

@@ -426,6 +426,38 @@ namespace MongoDB.Bson.IO
         }
 
         /// <summary>
+        /// Reads the raw bson document.
+        /// </summary>
+        /// <returns>
+        /// A RawBsonDocument.
+        /// </returns>
+        /// <exception cref="BsonInternalException">Unexpected ContextType.</exception>
+        public override RawBsonDocument ReadRawBsonDocument()
+        {
+            if (Disposed) { ThrowObjectDisposedException(); }
+            VerifyBsonType("ReadRawBsonDocument", BsonType.Document);
+
+            var length = _buffer.ReadInt32();
+            var bytes = new byte[length];
+            bytes[0] = (byte)(length);
+            bytes[1] = (byte)(length >> 8);
+            bytes[2] = (byte)(length >> 16);
+            bytes[3] = (byte)(length >> 24);
+            _buffer.ReadBytes(length - 4, bytes, 4);
+            var rawDocument = new RawBsonDocument(bytes);
+
+            switch (_context.ContextType)
+            {
+                case ContextType.Array: State = BsonReaderState.Type; break;
+                case ContextType.Document: State = BsonReaderState.Type; break;
+                case ContextType.TopLevel: State = BsonReaderState.Done; break;
+                default: throw new BsonInternalException("Unexpected ContextType.");
+            }
+
+            return rawDocument;
+        }
+
+        /// <summary>
         /// Reads a BSON regular expression from the reader.
         /// </summary>
         /// <returns>A BsonRegularExpression.</returns>

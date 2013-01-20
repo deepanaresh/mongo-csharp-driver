@@ -663,6 +663,27 @@ namespace MongoDB.Bson.IO
         }
 
         /// <summary>
+        /// Reads the raw bson document.
+        /// </summary>
+        /// <returns>A RawBsonDocument.</returns>
+        public virtual RawBsonDocument ReadRawBsonDocument()
+        {
+            var message = string.Format("{0} does not support ReadRawBsonDocument.", GetType().Name);
+            throw new NotSupportedException(message);
+        }
+
+        /// <summary>
+        /// Reads the raw bson document.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <returns>A RawBsonDocument.</returns>
+        public RawBsonDocument ReadRawBsonDocument(string name)
+        {
+            VerifyName(name);
+            return ReadRawBsonDocument();
+        }
+
+        /// <summary>
         /// Reads a BSON regular expression from the reader.
         /// </summary>
         /// <returns>A BsonRegularExpression.</returns>

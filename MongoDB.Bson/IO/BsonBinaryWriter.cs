@@ -462,6 +462,40 @@ namespace MongoDB.Bson.IO
         }
 
         /// <summary>
+        /// Writes the raw bson document.
+        /// </summary>
+        /// <param name="rawDocument">The raw document.</param>
+        public override void WriteRawBsonDocument(RawBsonDocument rawDocument)
+        {
+            if (Disposed) { throw new ObjectDisposedException("BsonBinaryWriter"); }
+            if (State != BsonWriterState.Initial && State != BsonWriterState.Value && State != BsonWriterState.ScopeDocument && State != BsonWriterState.Done)
+            {
+                ThrowInvalidState("WriteRawBsonDocument", BsonWriterState.Initial, BsonWriterState.Value, BsonWriterState.ScopeDocument, BsonWriterState.Done);
+            }
+
+            if (State == BsonWriterState.Value)
+            {
+                _buffer.WriteByte((byte)BsonType.Document);
+                WriteNameHelper();
+            }
+            _buffer.WriteBytes(rawDocument.Bytes);
+
+            if (_context == null)
+            {
+                State = BsonWriterState.Done;
+            }
+            else
+            {
+                if (_context.ContextType == ContextType.JavaScriptWithScope)
+                {
+                    BackpatchSize(); // size of the JavaScript with scope value
+                    _context = _context.ParentContext;
+                }
+                State = GetNextState();
+            }
+        }
+
+        /// <summary>
         /// Writes a BSON regular expression to the writer.
         /// </summary>
         /// <param name="regex">A BsonRegularExpression.</param>

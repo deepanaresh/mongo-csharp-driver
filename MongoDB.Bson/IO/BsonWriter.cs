@@ -546,6 +546,28 @@ namespace MongoDB.Bson.IO
         }
 
         /// <summary>
+        /// Writes the raw bson document.
+        /// </summary>
+        /// <param name="rawDocument">The raw document.</param>
+        /// <exception cref="System.NotSupportedException"></exception>
+        public virtual void WriteRawBsonDocument(RawBsonDocument rawDocument)
+        {
+            var message = string.Format("{0} does not support WriteRawBsonDocument.", GetType().Name);
+            throw new NotSupportedException(message);
+        }
+
+        /// <summary>
+        /// Writes the raw bson document.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="rawDocument">The raw document.</param>
+        public void WriteRawBsonDocument(string name, RawBsonDocument rawDocument)
+        {
+            WriteName(name);
+            WriteRawBsonDocument(rawDocument);
+        }
+
+        /// <summary>
         /// Writes a BSON ObjectId element to the writer.
         /// </summary>
         /// <param name="name">The name of the element.</param>
